@@ -15,8 +15,8 @@
 .logo {
   width: clamp(320px, 40vw, 520px);
   opacity: 0;
-  transform: translateY(-40px);
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transform: translateY(-80px);
+  transition: opacity 2s ease, transform 0.5s ease;
 }
 
 .logo.in {
@@ -31,7 +31,7 @@
   font-size: clamp(15px, 1.4vw, 25px);
   margin-top: 0.75rem;
   opacity: 0;
-  transition: opacity 3s ease;    /* 0.3 s delay = after logo finishes */
+  transition: opacity 2s ease .3s;
 }
 
 .tagline.show {
@@ -64,7 +64,7 @@
 }
 
 @media (max-width: 700px) {
-  .plane-container { top: -37%; left: 86.5%;}
+  .plane-container { top: -36%; left: 86.5%;}
   .plane { rotate: 28deg;}
 }
 
