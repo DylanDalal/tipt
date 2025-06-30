@@ -64,7 +64,7 @@
 }
 
 @media (max-width: 700px) {
-  .plane-container { top: -32%; left: 86%;}
+  .plane-container { top: -29%; left: 86%;}
   .plane { rotate: 28deg;}
 }
 
