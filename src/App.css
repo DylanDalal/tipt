@@ -1,42 +1,96 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* /src/App.css */
+.hero {
+  overflow: hidden;
+  z-index: 1;
+  width: 100vw;
+  height: 100vh;
+  background: url("/landing_bg.png") center/cover no-repeat;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+  width: clamp(320px, 40vw, 520px);
+  opacity: 0;
+  transform: translateY(-40px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.logo.in {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.tagline {
+  font-family: Helvetica, Arial, sans-serif;
+  font-weight: medium;
+  color: #eaeae2;
+  font-size: clamp(15px, 1.4vw, 25px);
+  margin-top: 0.75rem;
+  opacity: 0;
+  transition: opacity 3s ease;    /* 0.3 s delay = after logo finishes */
 }
 
-.card {
-  padding: 2em;
+.tagline.show {
+  opacity: 1;
 }
 
-.read-the-docs {
-  color: #888;
+.plane {
+  rotate: 28deg;
+  width: clamp(80px, 9vw, 600px);
+  z-index: 2;
 }
+
+.plane-container {
+  position: absolute;
+  top: -20%;
+  left: 79.5%;
+  width:0;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 2;
+  pointer-events: none;
+}
+
+@media (max-width: 1100px) {
+  .plane-container { top: -22.5%; left: 80%;}
+}
+
+@media (max-width: 700px) {
+  .plane-container { top: -26%; left: 90%;}
+}
+
+.arc {
+  position: absolute;
+  width: 100%;           
+  height: 100%;
+  z-index: 1;
+}
+
+.arc path{
+  stroke:#EA8152;
+  stroke-width:1px;
+  stroke-linecap:round;   
+  stroke-dasharray:2 2;
+  fill:none;
+}
+
+@media (max-width: 700px) {
+  .arc path { stroke-dasharray:4 2; stroke-width:.6px;}
+  
+}
+
+.arc-layer{
+  position:absolute;
+  inset:0;                         /* full-bleed overlay */
+  pointer-events:none;             /* ignore clicks */
+  z-index:1;                       /* behind the plane (which is z-index:2) */
+}
+
+.arc-layer svg{ width:100%; height:100%; }
