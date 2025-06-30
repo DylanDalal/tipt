@@ -39,15 +39,15 @@
 }
 
 .plane {
-  rotate: 28deg;
+  rotate: 25deg;
   width: clamp(80px, 9vw, 600px);
   z-index: 2;
 }
 
 .plane-container {
   position: absolute;
-  top: -20%;
-  left: 79.5%;
+  top: -22%;
+  left: 81.5%;
   width:0;
   height: 100vh;
   display: flex;
@@ -59,11 +59,13 @@
 }
 
 @media (max-width: 1100px) {
-  .plane-container { top: -22.5%; left: 80%;}
+  .plane-container { top: -22.5%; left: 81%;}
+  .plane { rotate: 30deg;}
 }
 
 @media (max-width: 700px) {
-  .plane-container { top: -26%; left: 90%;}
+  .plane-container { top: -32%; left: 86%;}
+  .plane { rotate: 28deg;}
 }
 
 .arc {

@@ -4,14 +4,14 @@ import "./App.css";
 
 const arcFor = w => {
   const yStart = Math.round(
-    40 - Math.min(1000, Math.max(0, 1400 - w)) * 0.02          // 0.02 = 20 / 1000
+    37 - Math.min(1000, Math.max(0, 1400 - w)) * 0.02          // 0.02 = 20 / 1000
   );
 
   const t       = Math.min(1, Math.max(0, (1400 - w) / 1000)); // 0..1
-  const scalar  = 1 - 0.65 * t;                                // 1 → 0.45
+  const scalar  = 1.1 - 0.59 * t;                                // 1 → 0.45
   const cpY     = yStart - yStart * scalar;                    // peak height
 
-  const end    = w < 700 ? { x: 84.5, y: 21.5 } : { x: 76, y: 25 };
+  const end    = w < 700 ? { x: 76, y: 16.5 } : { x: 76, y: 25 };
 
   return `M0,${yStart} Q50,${cpY} ${end.x},${end.y}`;
 };
