@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
-export const arcFor = w => {
+const arcFor = w => {
   const yStart = Math.round(
     40 - Math.min(1000, Math.max(0, 1400 - w)) * 0.02          // 0.02 = 20 / 1000
   );
