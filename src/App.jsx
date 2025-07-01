@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import "./App.css";
+import Signup from "./Signup.jsx";
 
 const getArcData = (w) => {
   const yStart = Math.round(
@@ -64,7 +65,8 @@ export default function App() {
   }, [arcData]);
 
   return (
-    <div className="hero">
+    <>
+      <div className="hero">
       <div className="arc-layer">
         <svg
           ref={svgRef}
@@ -97,5 +99,7 @@ export default function App() {
         </p>
       </div>
     </div>
+      <Signup />
+    </>
   );
 }
