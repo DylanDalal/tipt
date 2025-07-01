@@ -39,33 +39,14 @@
 }
 
 .plane {
-  rotate: 25deg;
   width: clamp(80px, 9vw, 600px);
   z-index: 2;
 }
 
 .plane-container {
-  position: absolute;
-  top: -22%;
-  left: 81.5%;
-  width:0;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  position: fixed;
   z-index: 2;
   pointer-events: none;
-}
-
-@media (max-width: 1100px) {
-  .plane-container { top: -22.5%; left: 81%;}
-  .plane { rotate: 30deg;}
-}
-
-@media (max-width: 700px) {
-  .plane-container { top: -36%; left: 86.5%;}
-  .plane { rotate: 28deg;}
 }
 
 .arc {
@@ -77,15 +58,14 @@
 
 .arc path{
   stroke:#EA8152;
-  stroke-width:1px;
+  stroke-width:.75px;
   stroke-linecap:round;   
-  stroke-dasharray:2 2;
+  stroke-dasharray:3 2;
   fill:none;
 }
 
 @media (max-width: 700px) {
-  .arc path { stroke-dasharray:4 2; stroke-width:.6px;}
-  
+  .arc path {stroke-width: .5px;}
 }
 
 .arc-layer{
