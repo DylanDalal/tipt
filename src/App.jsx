@@ -86,16 +86,16 @@ export default function App() {
       >
         <img className="plane" src="/plane.png" alt="" aria-hidden />
       </div>
-
-      <img
-        className={`logo ${ready ? "in" : ""}`}
-        src="/tipt_logo.svg"
-        alt="TIPT logo"
-      />
-      <p className={`tagline ${ready ? "show" : ""}`}>
-        Get&nbsp;Tipped.&nbsp;Finally.&nbsp;Launching&nbsp;Soon.
-      </p>
-      <div style={{ height: "28vh" }} />
+      <div className="logo-container">
+        <img
+          className={`logo ${ready ? "in" : ""}`}
+          src="/tipt_logo.svg"
+          alt="TIPT logo"
+        />
+        <p className={`tagline ${ready ? "show" : ""}`}>
+          Get&nbsp;Tipped.&nbsp;Finally.&nbsp;Launching&nbsp;Soon.
+        </p>
+      </div>
     </div>
   );
 }
