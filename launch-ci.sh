@@ -1,17 +1,22 @@
-# launch-ci.sh
 #!/usr/bin/env bash
 set -euo pipefail
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
 
-PROJECT_ID=demo-project
-npm ci
-command -v firebase >/dev/null || npm i -g firebase-tools@latest
+# Install deps (<= 2-3 min on the stock container)
+npm ci --prefer-offline --no-audit --progress=false
 
-# spin up emulators, run the build/tests, then exit
-firebase emulators:exec \
-  --project "$PROJECT_ID" \
+# Start Firebase emulators *in the background*.
+#    They keep running after this script exits.
+npx firebase emulators:start \
+  --project demo-project \
   --only firestore,auth,storage \
-  "npm run build && npm test"
+  --import seed-data \
+  --ui false \
+  > .logs/firebase.log 2>&1 &
+disown
 
-# optional: serve the built site for preview
-# (Codex will expose $PORT automatically)
-npx vite preview --port "${PORT:-3000}" &
+npm run build
+
+npx vite preview --port "$PORT" --strictPort &
+disown  
