@@ -1,26 +1,13 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{db}/documents {
-
-    /*  PUBLIC-READ  -------------------------------------------------
-       Anyone—even without Firebase Auth—can read every Recipient doc.
-    */
     match /recipients/{id} {
-
-      // Anyone with the URL or QR code can fetch the data
       allow read: if true;
-
-      /*  WRITES  ----------------------------------------------------
-         Only the authenticated owner of this doc may write.
-         • CREATE: compare the caller’s uid with the ownerUid
-           they’re about to save.
-         • UPDATE / DELETE: compare with the existing document.
-      */
-      allow create: if request.auth != null
-        && request.auth.uid == request.resource.data.ownerUid;
-
-      allow update, delete: if request.auth != null
-        && request.auth.uid == resource.data.ownerUid;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.ownerUid;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.ownerUid;
+    }
+    match /tags/{tagId} {
+      allow read: if true;
     }
   }
 }
