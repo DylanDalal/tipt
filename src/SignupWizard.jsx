@@ -179,7 +179,7 @@ export default function SignupWizard() {
   // persist URL so finish() can’t overwrite
   const finish = async () => {
     const clean = Object.fromEntries(
-      Object.entries(data).filter(([_, v]) => v !== '')
+      Object.entries(data).filter(([, v]) => v !== '')
     );
     await setDoc(
       doc(db, 'recipients', auth.currentUser.uid),
