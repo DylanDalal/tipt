@@ -4,9 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-} from 'firebase/auth';
+  signUpWithEmail,
+  signInWithEmail,
+} from './auth';
 import {
   arrayUnion,
   doc,
@@ -135,9 +135,9 @@ export default function SignupWizard() {
     try {
       let cred;
       try {
-        cred = await createUserWithEmailAndPassword(auth, data.email, data.password);
+        cred = await signUpWithEmail(data.email, data.password);
       } catch {
-        cred = await signInWithEmailAndPassword(auth, data.email, data.password);
+        cred = await signInWithEmail(data.email, data.password);
       }
       await setDoc(
         doc(db, 'recipients', cred.user.uid),
@@ -179,7 +179,7 @@ export default function SignupWizard() {
   // persist URL so finish() can’t overwrite
   const finish = async () => {
     const clean = Object.fromEntries(
-      Object.entries(data).filter(([_, v]) => v !== '')
+      Object.entries(data).filter(([, v]) => v !== '')
     );
     await setDoc(
       doc(db, 'recipients', auth.currentUser.uid),
