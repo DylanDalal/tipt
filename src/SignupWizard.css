@@ -1,0 +1,176 @@
+/* SignupWizard.css  ─────────────────────────────── */
+:root {
+  --brand-teal: #008080;
+  --brand-teal-light: #009c9c;
+  --border-radius: 8px;
+  --field-gap: 1rem;
+  --max-width: 45vw;
+  --error-color: #d7263d;
+  --grey-100: #fafafa;
+  --grey-300: #d1d5db;
+  --grey-600: #4b5563;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+}
+
+/* Page & card */
+body {
+  background: var(--grey-100);
+  color: var(--grey-600);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#wizard {
+  padding: 6rem;
+  color-scheme: light;
+  background: #fff;
+  width: 100%;
+  max-width: var(--max-width);
+  border-radius: var(--border-radius);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* Headings */
+h3 {
+  margin: 0 0 1.5rem;
+  font-size: 1.5rem;
+  color: #1f2937;
+  border-bottom: 2px solid var(--grey-300);
+  padding-bottom: 0.5rem;
+}
+
+/* Universal text-like controls */
+input:not([type="checkbox"]):not([type="radio"]),
+select,
+textarea {
+  width: 100%;
+  padding: 0.6rem 0rem 0.6rem 0.5rem;
+  font-size: 1rem;
+  border: 1px solid var(--grey-300);
+  border-radius: var(--border-radius);
+  background: #fff;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--brand-teal);
+  box-shadow: 0 0 0 3px rgba(0, 128, 128, 0.15);
+}
+
+/* Layout helpers */
+form,
+section { display: flex; flex-direction: column; gap: var(--field-gap); }
+
+label { font-weight: 600; margin-bottom: 0.25rem; display: block; }
+
+/* Buttons */
+button {
+  cursor: pointer;
+  border: none;
+  font-size: 1rem;
+  border-radius: var(--border-radius);
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+button[type="submit"],
+button[type="button"]:not(.secondary) {
+  background: var(--brand-teal);
+  color: #fff;
+}
+
+button.secondary { background: var(--grey-300); color: #1f2937; }
+button:disabled  { opacity: 0.55; cursor: not-allowed; }
+button:hover:not(:disabled) { background: var(--brand-teal-light); }
+
+.nav-buttons { display: flex; gap: .5rem; }
+
+/* Progress bars */
+progress {
+  width: 100%;
+  height: 0.75rem;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  appearance: none;
+}
+
+progress::-webkit-progress-bar { background: var(--grey-300); }
+progress::-webkit-progress-value,
+progress::-moz-progress-bar    { background: var(--brand-teal); }
+
+/* Error bucket */
+.error-list {
+  padding: 0.5rem 1rem;
+  border-left: 4px solid var(--error-color);
+  background: #ffeef0;
+  color: var(--error-color);
+  border-radius: var(--border-radius);
+  list-style: none;
+  margin: 0;
+}
+
+.row {
+  display: grid;
+  grid-gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* ≥ 640 px: choose explicit column counts */
+@media (min-width: 1000px) {
+  .row.cols-2 { grid-template-columns: repeat(2, 1fr); }
+  .row.cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .row.cols-4 { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* make buttons fill their grid cell too */
+.row button {
+  width: 100%;
+}
+
+/* bring back the native dropdown */
+select {
+  appearance: auto;            /* modern browsers */
+  -webkit-appearance: menulist;/* Safari / old WebKit */
+  -moz-appearance: menulist;   /* old Firefox */
+}
+
+input,
+select,
+textarea {
+  box-sizing: border-box;
+}
+
+/* ——— address autocomplete polish ——— */
+.addr-dropdown{
+  position:absolute;
+  width:100%;
+  box-sizing:border-box;
+  max-height:240px;
+  overflow-y:auto;
+  margin:0;
+  padding:0;
+  background:#fff;
+  border:1px solid #ccc;
+  border-top:none;
+  border-radius:0 0 6px 6px;
+  box-shadow:0 4px 8px rgba(0,0,0,.05);
+  z-index:20;
+}
+
+.addr-dropdown li{
+  padding:8px 12px;
+  color:#222 !important;
+  cursor:pointer;
+}
+
+.addr-dropdown li+li{
+  border-top:1px solid #eee;
+}
+
+.addr-dropdown li:hover{
+  background:#f6f6f6;
+}
