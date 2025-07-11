@@ -1,36 +1,49 @@
 // src/Navbar.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 import './Navbar.css';
 
 export default function Navbar() {
-  const [user, setUser] = useState(null);
-  const navigate = useNavigate();
+  const [user, setUser]           = useState(null);
+  const [photo, setPhoto]         = useState('');
+  const [open, setOpen]           = useState(false);
+  const nav                       = useNavigate();
+  const menuRef                   = useRef(null);
 
+  /* track auth */
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    const unsubAuth = onAuthStateChanged(auth, user => {
+      setUser(user);
+      if (user) {
+        // live listener instead of one-shot fetch
+        const unsubDoc = onSnapshot(
+          doc(db, 'recipients', user.uid),
+          snap => setPhoto(snap.data()?.profileImageUrl || '')
+        );
+        // tidy up
+        return () => unsubDoc();
+      } else {
+        setPhoto('');
+      }
     });
-    return () => unsubscribe();
+    return unsubAuth;
   }, []);
 
-  const handleAuthClick = () => {
-    if (user) {
-      navigate(`/profile/${user.uid}`);
-    } else {
-      navigate('/signup');
-    }
-  };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  /* close dropdown on outside click */
+  useEffect(() => {
+    const onClick = e => !menuRef.current?.contains(e.target) && setOpen(false);
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
+  const logout = async () => {
+    await signOut(auth);
+    setOpen(false);
+    nav('/');
   };
 
   return (
@@ -39,28 +52,30 @@ export default function Navbar() {
         <Link to="/" className="navbar-logo">
           <img src="/tipt_logo.svg" alt="TIPT" />
         </Link>
-        
-        <div className="navbar-buttons">
-          {user ? (
-            <>
-              <button className="navbar-btn" onClick={handleAuthClick}>
-                Profile
-              </button>
-              <button className="navbar-btn" onClick={handleLogout}>
-                Logout
-              </button>
-            </>
-          ) : (
-            <>
-              <button className="navbar-btn" onClick={handleAuthClick}>
-                Login
-              </button>
-              <button className="navbar-btn" onClick={handleAuthClick}>
-                Signup
-              </button>
-            </>
-          )}
-        </div>
+
+        {!user && (
+          <div className="navbar-buttons">
+            <button onClick={() => nav('/signup')}>Login</button>
+            <button onClick={() => nav('/signup')}>Signup</button>
+          </div>
+        )}
+
+        {user && (
+          <div ref={menuRef} className="avatar-wrapper">
+            <img
+              src={photo || '/default-avatar.png'}
+              alt="profile"
+              className="avatar-img"
+              onClick={() => setOpen(p => !p)}
+            />
+            {open && (
+              <ul className="avatar-menu">
+                <li onClick={() => { nav(`/profile/${user.uid}`); setOpen(false); }}>Profile</li>
+                <li onClick={logout}>Logout</li>
+              </ul>
+            )}
+          </div>
+        )}
       </div>
     </nav>
   );
