@@ -11,6 +11,7 @@ import {
   arrayUnion,
   doc,
   setDoc,
+  getDoc,
   collection,
   getDocs,
   serverTimestamp,
@@ -124,7 +125,7 @@ export default function SignupWizard() {
     defaultValues: data,
     resolver: yupResolver(schema),
   });
-
+  
   const hasPayPlatform = watch([
     'acceptsApplePay', 'acceptsGooglePay', 'acceptsSamsungPay',
   ]).some(Boolean);
@@ -136,17 +137,35 @@ export default function SignupWizard() {
       let cred;
       try {
         cred = await signUpWithEmail(data.email, data.password);
-      } catch {
-        cred = await signInWithEmail(data.email, data.password);
+        // New user - continue to step 2
+        await setDoc(
+          doc(db, 'recipients', cred.user.uid),
+          { ownerUid: cred.user.uid, recipientId: uuidv4(), createdAt: serverTimestamp() },
+          { merge: true },
+        );
+        setStep(2);
+      } catch (signupError) {
+        // Try to sign in existing user
+        try {
+          cred = await signInWithEmail(data.email, data.password);
+          // Check if user has completed profile
+          const userDoc = await getDoc(doc(db, 'recipients', cred.user.uid));
+          if (userDoc.exists() && userDoc.data().completed) {
+            // Existing user with completed profile - go to profile
+            nav(`/profile/${cred.user.uid}`);
+          } else {
+            // Existing user but incomplete profile - continue wizard
+            setStep(2);
+          }
+        } catch (signinError) {
+          setStatus('Invalid email or password');
+        }
       }
-      await setDoc(
-        doc(db, 'recipients', cred.user.uid),
-        { ownerUid: cred.user.uid, recipientId: uuidv4(), createdAt: serverTimestamp() },
-        { merge: true },
-      );
-      setStep(2);
-    } catch (err) { setStatus(err.message); }
+    } catch (err) { 
+      setStatus(err.message); 
+    }
   };
+
 
   /* uploads */
   const uploadFile = (file, path, field) => {

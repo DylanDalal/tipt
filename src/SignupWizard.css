@@ -13,9 +13,12 @@
     sans-serif;
 }
 
+#wizard { margin-inline: auto; }
+
 /* Page & card */
 body {
   background: var(--grey-100);
+  flex-direction: column;
   color: var(--grey-600);
   display: flex;
   align-items: center;

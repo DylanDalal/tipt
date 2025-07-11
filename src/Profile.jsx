@@ -1,16 +1,60 @@
+// src/Profile.jsx
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc } from 'firebase/firestore';
+import { auth } from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 import { db } from './firebase';
 
 export default function Profile() {
   const { uid } = useParams();
+  const navigate = useNavigate();
   const [d, setD] = useState(null);
-  useEffect(()=>{ getDoc(doc(db,'recipients',uid)).then(s=>setD(s.data())); },[uid]);
-  if(!d) return <p>Loading…</p>;
+  const [currentUser, setCurrentUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const docSnap = await getDoc(doc(db, 'recipients', uid));
+        if (docSnap.exists()) {
+          setD(docSnap.data());
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (uid) {
+      fetchProfile();
+    }
+  }, [uid]);
+
+  // Profile.jsx
+  const handleEdit = () => {
+    navigate(`/profile/${uid}/edit`); 
+  };
+
+
+  if (loading) return <p>Loading…</p>;
+  if (!d) return <p>Profile not found</p>;
+
+  const canEdit = currentUser && currentUser.uid === uid;
 
   return (
-    <article style={{maxWidth:680,margin:'2rem auto',padding:'0 1rem'}}>
+    <article style={{maxWidth:680,margin:'5rem auto',padding:'0 1rem'}}>
+      {/* Edit button for profile owner */}
+
+
       {/* banner */}
       {d.profileBannerUrl&&<img src={d.profileBannerUrl} alt="banner"
           style={{width:'100%',borderRadius:8,marginBottom:16}}/>}
@@ -34,7 +78,7 @@ export default function Profile() {
 
       {/* body */}
       {d.description&&<p style={{marginTop:24,whiteSpace:'pre-wrap'}}>{d.description}</p>}
-
+      
       {/* payments & socials */}
       <section style={{marginTop:32}}>
         {d.acceptsApplePay&&<h3>Apple Pay Enabled</h3>}
@@ -56,6 +100,24 @@ export default function Profile() {
               style={{width:'100%',borderRadius:4,objectFit:'cover'}}/>)}
           </div>
         </>
+      )}
+      {canEdit && (
+        <div style={{textAlign: 'right', marginBottom: '1rem'}}>
+          <button 
+            onClick={handleEdit}
+            style={{
+              background: '#ea8151',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontWeight: '600'
+            }}
+          >
+            Edit Profile
+          </button>
+        </div>
       )}
     </article>
   );
