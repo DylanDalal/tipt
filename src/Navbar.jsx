@@ -15,16 +15,15 @@ export default function Navbar() {
 
   /* track auth */
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, user => {
+    const unsubAuth = onAuthStateChanged(auth, async user => {
       setUser(user);
       if (user) {
-        // live listener instead of one-shot fetch
-        const unsubDoc = onSnapshot(
-          doc(db, 'recipients', user.uid),
-          snap => setPhoto(snap.data()?.profileImageUrl || '')
-        );
-        // tidy up
-        return () => unsubDoc();
+        try {
+          const snap = await getDoc(doc(db, 'recipients', user.uid));
+          setPhoto(snap.exists() ? snap.data().profileImageUrl || '' : '');
+        } catch {
+          setPhoto('');
+        }
       } else {
         setPhoto('');
       }
