@@ -3,29 +3,31 @@ import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 import './Navbar.css';
 
 export default function Navbar() {
-  const [user, setUser]           = useState(null);
-  const [photo, setPhoto]         = useState('');
-  const [open, setOpen]           = useState(false);
-  const nav                       = useNavigate();
-  const menuRef                   = useRef(null);
+  const [user, setUser]            = useState(null);
+  const [photo, setPhoto]          = useState('');
+  const [complete, setComplete]    = useState(false);
+  const [open, setOpen]            = useState(false);
+  const nav                        = useNavigate();
+  const menuRef                    = useRef(null);
 
   /* track auth */
   useEffect(() => {
-    const unsubAuth = onAuthStateChanged(auth, async user => {
+    const unsubAuth = onAuthStateChanged(auth, user => {
       setUser(user);
       if (user) {
-        try {
-          const snap = await getDoc(doc(db, 'recipients', user.uid));
-          setPhoto(snap.exists() ? snap.data().profileImageUrl || '' : '');
-        } catch {
-          setPhoto('');
-        }
+        const unsubDoc = onSnapshot(doc(db, 'recipients', user.uid), snap => {
+          const d = snap.data() || {};
+          setComplete(!!d.completed);
+          setPhoto(d.completed ? d.profileImageUrl || '' : '');
+        });
+        return () => unsubDoc();
       } else {
         setPhoto('');
+        setComplete(false);
       }
     });
     return unsubAuth;
@@ -52,14 +54,12 @@ export default function Navbar() {
           <img src="/tipt_logo.svg" alt="TIPT" />
         </Link>
 
-        {!user && (
+        {!user || !complete ? (
           <div className="navbar-buttons">
             <button onClick={() => nav('/signup')}>Login</button>
             <button onClick={() => nav('/signup')}>Signup</button>
           </div>
-        )}
-
-        {user && (
+        ) : (
           <div ref={menuRef} className="avatar-wrapper">
             <img
               src={photo || '/default-avatar.png'}
