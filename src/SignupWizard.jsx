@@ -7,6 +7,7 @@ import {
   signUpWithEmail,
   signInWithEmail,
 } from './auth';
+import { onAuthStateChanged } from 'firebase/auth';
 import {
   arrayUnion,
   doc,
@@ -111,9 +112,14 @@ export default function SignupWizard() {
   };
 
   useEffect(() => {
-    getDocs(collection(db, 'tags')).then(snap =>
-      setTagOptions(snap.docs.map(d => d.id)));
-  }, []);
+  const unsub = onAuthStateChanged(auth, user => {
+    if (user) {
+      getDocs(collection(db, 'tags')).then(snap =>
+        setTagOptions(snap.docs.map(d => d.id)));
+    }
+  });
+  return unsub;
+}, []);
 
   /* RHF */
   const {
@@ -130,6 +136,16 @@ export default function SignupWizard() {
     'acceptsApplePay', 'acceptsGooglePay', 'acceptsSamsungPay',
   ]).some(Boolean);
 
+  const waitForAuthReady = () =>
+    new Promise(resolve => {
+      const unsub = onAuthStateChanged(auth, user => {
+        if (user) {
+          unsub();
+          resolve(user);
+        }
+      });
+    });
+
   /* Firebase auth (Step-1) */
   const registerAccount = async e => {
     e.preventDefault();
@@ -137,10 +153,14 @@ export default function SignupWizard() {
       let cred;
       try {
         cred = await signUpWithEmail(data.email, data.password);
-        // New user - continue to step 2
+        const user = await waitForAuthReady(); // ← ensures Firestore sees request.auth
         await setDoc(
-          doc(db, 'recipients', cred.user.uid),
-          { ownerUid: cred.user.uid, recipientId: uuidv4(), createdAt: serverTimestamp() }
+          doc(db, 'recipients', user.uid),
+          {
+            ownerUid: user.uid,
+            recipientId: uuidv4(),
+            createdAt: serverTimestamp(),
+          }
         );
         setStep(2);
       } catch (signupError) {
