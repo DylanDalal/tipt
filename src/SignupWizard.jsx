@@ -140,8 +140,7 @@ export default function SignupWizard() {
         // New user - continue to step 2
         await setDoc(
           doc(db, 'recipients', cred.user.uid),
-          { ownerUid: cred.user.uid, recipientId: uuidv4(), createdAt: serverTimestamp() },
-          { merge: true },
+          { ownerUid: cred.user.uid, recipientId: uuidv4(), createdAt: serverTimestamp() }
         );
         setStep(2);
       } catch (signupError) {
