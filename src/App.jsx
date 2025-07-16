@@ -5,11 +5,13 @@ import Profile from './Profile';
 import Home from './Home';
 import Navbar from './Navbar';
 
+
+console.log(import.meta.env.VITE_FIREBASE_API_KEY)
+
+
 export default function App() {
   return (
     <>
-      console.log(import.meta.env.VITE_FIREBASE_API_KEY)
-
       <Navbar />
       <div>
         <Routes>
