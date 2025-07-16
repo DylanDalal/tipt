@@ -8,6 +8,8 @@ import Navbar from './Navbar';
 export default function App() {
   return (
     <>
+      console.log(import.meta.env.VITE_FIREBASE_API_KEY)
+
       <Navbar />
       <div>
         <Routes>
