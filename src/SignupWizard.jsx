@@ -164,6 +164,7 @@ export default function SignupWizard() {
         );
         setStep(2);
       } catch (signupError) {
+        console.log('SIGNUP ERROR', signupError.code, signupError.message);
         // Try to sign in existing user
         try {
           cred = await signInWithEmail(data.email, data.password);
@@ -177,7 +178,10 @@ export default function SignupWizard() {
             setStep(2);
           }
         } catch (signinError) {
-          setStatus('Invalid email or password');
+          console.log('SIGNIN ERROR', signinError.code, signinError.message);
+          setStatus(signinError.code === 'auth/wrong-password'
+            ? 'Wrong password for existing account'
+            : 'Invalid email or password');
         }
       }
     } catch (err) { 
