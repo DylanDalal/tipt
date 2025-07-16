@@ -7,6 +7,11 @@ import Navbar from './Navbar';
 
 
 console.log(import.meta.env.VITE_FIREBASE_API_KEY)
+console.log(import.meta.env.VITE_FIREBASE_APP_ID)
+console.log(import.meta.env.VITE_FIREBASE_AUTH_DOMAIN)
+console.log(import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID)
+console.log(import.meta.env.VITE_FIREBASE_PROJECT_ID)
+console.log(import.meta.env.VITE_FIREBASE_STORAGE_BUCKET)
 
 
 export default function App() {
