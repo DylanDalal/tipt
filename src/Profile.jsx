@@ -113,6 +113,16 @@ export default function Profile() {
 
   const canEdit = currentUser && currentUser.uid === uid;
 
+  const venmoLink = d.venmoUsername
+    ? `https://venmo.com/${d.venmoUsername.replace(/^@/, '')}`
+    : d.venmoUrl;
+  const cashAppLink = d.cashAppUsername
+    ? `https://cash.app/$${d.cashAppUsername.replace(/^\$+/, '')}`
+    : d.cashAppUrl;
+  const payPalLink = d.payPalUsername
+    ? `https://paypal.me/${d.payPalUsername.replace(/^@/, '')}`
+    : d.payPalUrl;
+
   return (
     <article style={{maxWidth:680,margin:'5rem auto',padding:'0 1rem'}}>
       {/* Edit button for profile owner */}
@@ -147,18 +157,18 @@ export default function Profile() {
         {d.acceptsApplePay&&<h3>Apple Pay Enabled</h3>}
         {d.acceptsGooglePay&&<h3>Google Pay Enabled</h3>}
         {d.acceptsSamsungPay&&<h3>Samsung Pay Enabled</h3>}
-        {d.venmoUrl&&<h3>Venmo: <span
-          onClick={() => handleLinkClick('venmo', d.venmoUrl)}
+        {venmoLink&&<h3>Venmo: <span
+          onClick={() => handleLinkClick('venmo', venmoLink)}
           style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
-        >{d.venmoUrl}</span></h3>}
-        {d.cashAppTag&&<h3>Cash App: <span
-          onClick={() => handleLinkClick('cashapp', d.cashAppTag)}
+        >{venmoLink}</span></h3>}
+        {cashAppLink&&<h3>CashApp: <span
+          onClick={() => handleLinkClick('cashapp', cashAppLink)}
           style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
-        >{d.cashAppTag}</span></h3>}
-        {d.payPalUrl&&<h3>PayPal: <span
-          onClick={() => handleLinkClick('paypal', d.payPalUrl)}
+        >{cashAppLink}</span></h3>}
+        {payPalLink&&<h3>PayPal: <span
+          onClick={() => handleLinkClick('paypal', payPalLink)}
           style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
-        >{d.payPalUrl}</span></h3>}
+        >{payPalLink}</span></h3>}
         {d.spotifyUrl&&<h3>Spotify: <span 
           onClick={() => handleLinkClick('spotify', d.spotifyUrl)}
           style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
