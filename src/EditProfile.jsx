@@ -229,21 +229,28 @@ export default function EditProfile() {
         {/* LINKS */}
         <div className="row cols-2">
           <div className="flex-half">
-            <input placeholder="PayPal URL" {...register('payPalUrl')} />
+            <input placeholder="PayPal.Me username" {...register('payPalUrl')} />
           </div>
           <div className="flex-half">
-            <input placeholder="Venmo URL" {...register('venmoUrl')} />
+            <input placeholder="Venmo username" {...register('venmoUrl')} />
           </div>
         </div>
         <div className="row cols-2">
           <div className="flex-half">
+            <input placeholder="Cash App $cashtag" {...register('cashAppTag')} />
+          </div>
+          <div className="flex-half">
             <input placeholder="Spotify URL" {...register('spotifyUrl')} />
           </div>
+        </div>
+        <div className="row cols-2">
           <div className="flex-half">
             <input placeholder="YouTube URL" {...register('youTubeUrl')} />
           </div>
+          <div className="flex-half">
+            <input placeholder="TikTok URL" {...register('tikTokUrl')} />
+          </div>
         </div>
-        <input placeholder="TikTok URL" {...register('tikTokUrl')} />
 
         {/* THEME / GALLERY */}
         <div className="row cols-2">
