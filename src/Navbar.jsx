@@ -69,6 +69,7 @@ export default function Navbar() {
             />
             {open && (
               <ul className="avatar-menu">
+                <li onClick={() => { nav('/dashboard'); setOpen(false); }}>Dashboard</li>
                 <li onClick={() => { nav(`/profile/${user.uid}`); setOpen(false); }}>Profile</li>
                 <li onClick={logout}>Logout</li>
               </ul>

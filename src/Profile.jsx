@@ -5,6 +5,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db } from './firebase';
+import { trackProfileView, trackLinkClick, getVisitorLocation } from './analytics';
 
 export default function Profile() {
   const { uid } = useParams();
@@ -39,9 +40,62 @@ export default function Profile() {
     }
   }, [uid]);
 
+  // Separate effect for tracking profile views to avoid double counting
+  useEffect(() => {
+    let hasTracked = false;
+    
+    const trackView = async () => {
+      // Only track if:
+      // 1. We have a uid
+      // 2. We haven't tracked yet in this session
+      // 3. Current user is not the profile owner (or no current user)
+      if (uid && !hasTracked && (!currentUser || currentUser.uid !== uid)) {
+        hasTracked = true;
+        console.log('Tracking profile view for:', { uid, currentUser: currentUser?.uid || 'anonymous' });
+        try {
+          const visitorLocation = await getVisitorLocation();
+          await trackProfileView(uid, visitorLocation);
+        } catch (error) {
+          console.error('Error tracking profile view:', error);
+        }
+      } else {
+        console.log('Not tracking profile view:', { uid, hasTracked, isOwner: currentUser?.uid === uid });
+      }
+    };
+
+    // Track for both authenticated and anonymous users
+    // We need to wait a bit for auth state to settle, but also handle anonymous users
+    const timer = setTimeout(() => {
+      trackView();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [uid, currentUser]);
+
   // Profile.jsx
   const handleEdit = () => {
     navigate(`/profile/${uid}/edit`); 
+  };
+
+  // Handle link clicks with analytics tracking
+  const handleLinkClick = async (linkType, linkUrl) => {
+    console.log('Link clicked:', { linkType, linkUrl, currentUser: currentUser?.uid, profileUid: uid });
+    
+    // Track the click (only if not the profile owner)
+    if (!currentUser || currentUser.uid !== uid) {
+      console.log('Tracking link click for non-owner');
+      try {
+        const visitorLocation = await getVisitorLocation();
+        await trackLinkClick(uid, linkType, linkUrl, visitorLocation);
+      } catch (error) {
+        console.error('Error in handleLinkClick:', error);
+      }
+    } else {
+      console.log('Not tracking - user is profile owner');
+    }
+    
+    // Open the link
+    window.open(linkUrl, '_blank', 'noopener,noreferrer');
   };
 
 
@@ -84,11 +138,26 @@ export default function Profile() {
         {d.acceptsApplePay&&<h3>Apple Pay Enabled</h3>}
         {d.acceptsGooglePay&&<h3>Google Pay Enabled</h3>}
         {d.acceptsSamsungPay&&<h3>Samsung Pay Enabled</h3>}
-        {d.venmoUrl&&<h3>Venmo: <a href={d.venmoUrl}>{d.venmoUrl}</a></h3>}
-        {d.payPalUrl&&<h3>PayPal: <a href={d.payPalUrl}>{d.payPalUrl}</a></h3>}
-        {d.spotifyUrl&&<h3>Spotify: <a href={d.spotifyUrl}>{d.spotifyUrl}</a></h3>}
-        {d.youTubeUrl&&<h3>YouTube: <a href={d.youTubeUrl}>{d.youTubeUrl}</a></h3>}
-        {d.tikTokUrl&&<h3>TikTok: <a href={d.tikTokUrl}>{d.tikTokUrl}</a></h3>}
+        {d.venmoUrl&&<h3>Venmo: <span 
+          onClick={() => handleLinkClick('venmo', d.venmoUrl)}
+          style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
+        >{d.venmoUrl}</span></h3>}
+        {d.payPalUrl&&<h3>PayPal: <span 
+          onClick={() => handleLinkClick('paypal', d.payPalUrl)}
+          style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
+        >{d.payPalUrl}</span></h3>}
+        {d.spotifyUrl&&<h3>Spotify: <span 
+          onClick={() => handleLinkClick('spotify', d.spotifyUrl)}
+          style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
+        >{d.spotifyUrl}</span></h3>}
+        {d.youTubeUrl&&<h3>YouTube: <span 
+          onClick={() => handleLinkClick('youtube', d.youTubeUrl)}
+          style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
+        >{d.youTubeUrl}</span></h3>}
+        {d.tikTokUrl&&<h3>TikTok: <span 
+          onClick={() => handleLinkClick('tiktok', d.tikTokUrl)}
+          style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
+        >{d.tikTokUrl}</span></h3>}
       </section>
 
       {/* gallery */}

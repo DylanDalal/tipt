@@ -164,21 +164,19 @@ export default function SignupWizard() {
         );
         setStep(2);
       } catch (signupError) {
-        console.log('SIGNUP ERROR', signupError.code, signupError.message);
         // Try to sign in existing user
         try {
           cred = await signInWithEmail(data.email, data.password);
           // Check if user has completed profile
           const userDoc = await getDoc(doc(db, 'recipients', cred.user.uid));
           if (userDoc.exists() && userDoc.data().completed) {
-            // Existing user with completed profile - go to profile
-            nav(`/profile/${cred.user.uid}`);
+            // Existing user with completed profile - go to dashboard
+            nav('/dashboard');
           } else {
             // Existing user but incomplete profile - continue wizard
             setStep(2);
           }
         } catch (signinError) {
-          console.log('SIGNIN ERROR', signinError.code, signinError.message);
           setStatus(signinError.code === 'auth/wrong-password'
             ? 'Wrong password for existing account'
             : 'Invalid email or password');
@@ -218,7 +216,7 @@ export default function SignupWizard() {
   };
 
   /* Finish */
-  // persist URL so finish() can’t overwrite
+  // persist URL so finish() can't overwrite
   const finish = async () => {
     const clean = Object.fromEntries(
       Object.entries(data).filter(([, v]) => v !== '')
@@ -228,7 +226,7 @@ export default function SignupWizard() {
       { ...clean, completed: true, completedAt: serverTimestamp() },
       { merge: true }
     );
-    nav(`/profile/${auth.currentUser.uid}`);
+    nav('/dashboard');
   };
 
 
