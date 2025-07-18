@@ -51,3 +51,9 @@ Make sure these ports are free before launching.
 Some environments outside of VS Code occasionally have issues launching the
 browsers. If you run into problems, run the script from a terminal inside VS
 Code or open the printed URLs manually.
+
+## Payment handles
+
+When editing your profile you can provide a **Venmo username**, a **Cash App
+$cashtag** and a **PayPal.Me username**. The app turns these handles into
+clickable payment links on your public profile.
