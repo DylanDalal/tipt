@@ -43,7 +43,7 @@ const FRESH = {
   description: '', notes: '',
   tags: [], genres: [], themeColor: '#008080',
   images: [],
-  payPalUrl: '', venmoUrl: '', spotifyUrl: '',
+  payPalUrl: '', venmoUrl: '', cashAppTag: '', spotifyUrl: '',
   youTubeUrl: '', tikTokUrl: '',
 };
 
@@ -465,18 +465,18 @@ export default function SignupWizard() {
             </div>
           </div>
 
-          {/* Payment / social URLs */}
+          {/* Payment / social handles */}
           <div className="row cols-2">
             <div className="flex-half">
               <input
-                placeholder="PayPal URL"
+                placeholder="PayPal.Me username"
                 value={data.payPalUrl}
                 onChange={e => setData(p => ({ ...p, payPalUrl: e.target.value }))}
               />
             </div>
             <div className="flex-half">
               <input
-                placeholder="Venmo URL"
+                placeholder="Venmo username"
                 value={data.venmoUrl}
                 onChange={e => setData(p => ({ ...p, venmoUrl: e.target.value }))}
               />
@@ -486,25 +486,36 @@ export default function SignupWizard() {
           <div className="row cols-2">
             <div className="flex-half">
               <input
+                placeholder="Cash App $cashtag"
+                value={data.cashAppTag}
+                onChange={e => setData(p => ({ ...p, cashAppTag: e.target.value }))}
+              />
+            </div>
+            <div className="flex-half">
+              <input
                 placeholder="Spotify URL"
                 value={data.spotifyUrl}
                 onChange={e => setData(p => ({ ...p, spotifyUrl: e.target.value }))}
               />
             </div>
+          </div>
+
+          <div className="row cols-2">
             <div className="flex-half">
               <input
                 placeholder="YouTube URL"
                 value={data.youTubeUrl}
                 onChange={e => setData(p => ({ ...p, youTubeUrl: e.target.value }))}
               />
-            </div>  
+            </div>
+            <div className="flex-half">
+              <input
+                placeholder="TikTok URL"
+                value={data.tikTokUrl}
+                onChange={e => setData(p => ({ ...p, tikTokUrl: e.target.value }))}
+              />
+            </div>
           </div>
-
-          <input
-            placeholder="TikTok URL"
-            value={data.tikTokUrl}
-            onChange={e => setData(p => ({ ...p, tikTokUrl: e.target.value }))}
-          />
 
           {/* 2-column row */}
           <div className="row cols-2">

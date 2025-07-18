@@ -78,15 +78,24 @@ export default function Profile() {
   };
 
   // Handle link clicks with analytics tracking
-  const handleLinkClick = async (linkType, linkUrl) => {
-    console.log('Link clicked:', { linkType, linkUrl, currentUser: currentUser?.uid, profileUid: uid });
+  const handleLinkClick = async (linkType, linkValue) => {
+    console.log('Link clicked:', { linkType, linkValue, currentUser: currentUser?.uid, profileUid: uid });
+
+    let url = linkValue;
+    if (linkType === 'venmo') {
+      url = `https://venmo.com/u/${linkValue.replace(/^@/, '')}`;
+    } else if (linkType === 'paypal') {
+      url = `https://paypal.me/${linkValue.replace(/^@/, '')}`;
+    } else if (linkType === 'cashapp') {
+      url = `https://cash.app/${linkValue.replace(/^\$/, '')}`;
+    }
     
     // Track the click (only if not the profile owner)
     if (!currentUser || currentUser.uid !== uid) {
       console.log('Tracking link click for non-owner');
       try {
         const visitorLocation = await getVisitorLocation();
-        await trackLinkClick(uid, linkType, linkUrl, visitorLocation);
+        await trackLinkClick(uid, linkType, url, visitorLocation);
       } catch (error) {
         console.error('Error in handleLinkClick:', error);
       }
@@ -95,7 +104,7 @@ export default function Profile() {
     }
     
     // Open the link
-    window.open(linkUrl, '_blank', 'noopener,noreferrer');
+    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
 
@@ -138,11 +147,15 @@ export default function Profile() {
         {d.acceptsApplePay&&<h3>Apple Pay Enabled</h3>}
         {d.acceptsGooglePay&&<h3>Google Pay Enabled</h3>}
         {d.acceptsSamsungPay&&<h3>Samsung Pay Enabled</h3>}
-        {d.venmoUrl&&<h3>Venmo: <span 
+        {d.venmoUrl&&<h3>Venmo: <span
           onClick={() => handleLinkClick('venmo', d.venmoUrl)}
           style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
         >{d.venmoUrl}</span></h3>}
-        {d.payPalUrl&&<h3>PayPal: <span 
+        {d.cashAppTag&&<h3>Cash App: <span
+          onClick={() => handleLinkClick('cashapp', d.cashAppTag)}
+          style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
+        >{d.cashAppTag}</span></h3>}
+        {d.payPalUrl&&<h3>PayPal: <span
           onClick={() => handleLinkClick('paypal', d.payPalUrl)}
           style={{color: '#008080', cursor: 'pointer', textDecoration: 'underline'}}
         >{d.payPalUrl}</span></h3>}
