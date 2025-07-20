@@ -78,8 +78,16 @@ export default function Profile() {
   };
 
   // Handle link clicks with analytics tracking
-  const handleLinkClick = async (linkType, linkValue) => {
-    console.log('Link clicked:', { linkType, linkValue, currentUser: currentUser?.uid, profileUid: uid });
+  // Open the link immediately and then track the click. Mobile browsers
+  // often block popups if they are not triggered directly by the user
+  // gesture, so we cannot await any async work before calling window.open.
+  const handleLinkClick = (linkType, linkValue) => {
+    console.log('Link clicked:', {
+      linkType,
+      linkValue,
+      currentUser: currentUser?.uid,
+      profileUid: uid
+    });
 
     let url = linkValue;
     if (linkType === 'venmo') {
@@ -90,21 +98,29 @@ export default function Profile() {
       url = `https://cash.app/${linkValue.replace(/^\$/, '')}`;
     }
     
-    // Track the click (only if not the profile owner)
+    // Open the link first to preserve the user gesture
+    window.open(url, '_blank', 'noopener,noreferrer');
+
+    // Track the click (only if not the profile owner) without blocking the link
     if (!currentUser || currentUser.uid !== uid) {
       console.log('Tracking link click for non-owner');
-      try {
-        const visitorLocation = await getVisitorLocation();
-        await trackLinkClick(uid, linkType, url, visitorLocation);
-      } catch (error) {
-        console.error('Error in handleLinkClick:', error);
-      }
+      (async () => {
+        let visitorLocation = { location: 'Unknown' };
+        try {
+          visitorLocation = await getVisitorLocation();
+        } catch (error) {
+          // Location fetch failures shouldn't prevent analytics
+          console.error('Error getting visitor location:', error);
+        }
+        try {
+          await trackLinkClick(uid, linkType, url, visitorLocation);
+        } catch (error) {
+          console.error('Error tracking link click:', error);
+        }
+      })();
     } else {
       console.log('Not tracking - user is profile owner');
     }
-    
-    // Open the link
-    window.open(url, '_blank', 'noopener,noreferrer');
   };
 
 
