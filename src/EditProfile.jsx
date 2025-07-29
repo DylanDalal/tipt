@@ -13,6 +13,7 @@ import {
   ref, uploadBytesResumable, getDownloadURL,
 } from 'firebase/storage';
 import debounce from 'lodash.debounce';
+import { extractDominantColors } from './colorExtractor';
 
 // static options
 const SUBSCRIPTION_OPTIONS = ['monthly', 'yearly'];
@@ -50,6 +51,7 @@ export default function EditProfile() {
   const [addrQ, setAddrQ] = useState('');
   const [addrHits, setAddrHits] = useState([]);
   const [status, setStatus] = useState('');
+  const [isUploading, setIsUploading] = useState(false);
 
   // form
   const { register, setValue, handleSubmit, watch, trigger,
@@ -92,30 +94,89 @@ export default function EditProfile() {
   const uploadFile = (file,path,field)=>{
     if(!file||file.size>5*1024*1024)
       return setStatus('Max file size 5 MB');
+    
+    setIsUploading(true);
     const task = uploadBytesResumable(
       ref(storage,`recipients/${uid}/${path}`),file);
     task.on('state_changed',
       s=>setUploadPct(p=>({...p,[path]:
         Math.round(s.bytesTransferred/s.totalBytes*100)})),
-      err=>setStatus(err.message),
+      err=>{
+        setStatus(err.message);
+        setIsUploading(false);
+      },
       async ()=>{
         const url = await getDownloadURL(task.snapshot.ref);
+        
+        // Extract colors if this is a banner image
+        let bannerColors = [];
+        if (field === 'profileBannerUrl') {
+          try {
+            console.log('EditProfile: Extracting colors from banner image...');
+            bannerColors = await extractDominantColors(file);
+            console.log('EditProfile: Extracted colors:', bannerColors);
+          } catch (error) {
+            console.error('Error extracting colors:', error);
+            // Continue without colors if extraction fails
+          }
+        }
+
+        // Save to database
+        const updateData = { [field]: field === 'images' ? arrayUnion(url) : url };
+        if (field === 'profileBannerUrl' && bannerColors.length > 0) {
+          updateData.bannerColors = bannerColors;
+          console.log('EditProfile: Saving banner colors to database:', bannerColors);
+        }
+
+        console.log('EditProfile: Saving to database:', updateData);
+
         await setDoc(
           doc(db,'recipients',uid),
-          { [field]:field==='images'?arrayUnion(url):url },
+          updateData,
           { merge:true });
+        
+        // Small delay to ensure the update is processed
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
         setValue(field,field==='images'
           ? [ ...(watch('images')||[]), url ]
           : url);
+        
+        setIsUploading(false);
       });
   };
 
   /*──────────────── save ─────────────────────────────*/
   const onSubmit = async vals=>{
-    await setDoc(
-      doc(db,'recipients',uid),
-      { ...vals, updatedAt:serverTimestamp() },
-      { merge:true });
+    console.log('EditProfile: onSubmit called with values:', vals);
+    
+    // Get current document to preserve banner colors
+    try {
+      const currentDoc = await getDoc(doc(db, 'recipients', uid));
+      const currentData = currentDoc.exists() ? currentDoc.data() : {};
+      console.log('EditProfile: Current document data:', currentData);
+      
+      // Preserve banner colors if they exist
+      const updateData = { ...vals, updatedAt: serverTimestamp() };
+      if (currentData.bannerColors) {
+        updateData.bannerColors = currentData.bannerColors;
+        console.log('EditProfile: Preserving banner colors:', currentData.bannerColors);
+      }
+      
+      console.log('EditProfile: Final update data:', updateData);
+      await setDoc(
+        doc(db,'recipients',uid),
+        updateData,
+        { merge:true });
+    } catch (error) {
+      console.error('EditProfile: Error in onSubmit:', error);
+      // Fallback to original behavior
+      await setDoc(
+        doc(db,'recipients',uid),
+        { ...vals, updatedAt:serverTimestamp() },
+        { merge:true });
+    }
+    
     nav(`/profile/${uid}`);
   };
 
@@ -283,9 +344,9 @@ export default function EditProfile() {
         )}
 
         <div className="nav-buttons">
-          <button type="button" className="secondary" onClick={()=>nav(-1)}>Cancel</button>
-          <button type="submit" disabled={isSubmitting}>
-            {isSubmitting?'Saving…':'Save Changes'}
+          <button type="button" className="secondary" onClick={()=>nav(-1)} disabled={isUploading}>Cancel</button>
+          <button type="submit" disabled={isSubmitting || isUploading}>
+            {isSubmitting ? 'Saving…' : isUploading ? 'Uploading…' : 'Save Changes'}
           </button>
         </div>
 

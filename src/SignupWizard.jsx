@@ -27,6 +27,7 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import debounce from 'lodash.debounce';
+import { extractDominantColors } from './colorExtractor';
 
 const SUBSCRIPTION_OPTIONS = ['monthly', 'yearly'];
 const GENRE_OPTIONS = [
@@ -39,7 +40,7 @@ const FRESH = {
   subscription: '',
   acceptsApplePay: false, acceptsGooglePay: false, acceptsSamsungPay: false,
   taxID: '',
-  profileImageUrl: '', profileBannerUrl: '',
+  profileImageUrl: '', profileBannerUrl: '', bannerColors: [],
   description: '', notes: '',
   tags: [], genres: [], themeColor: '#008080',
   images: [],
@@ -83,6 +84,7 @@ export default function SignupWizard() {
   const [showErrors, setShowErrors] = useState(false);
   const [addrQ, setAddrQ]   = useState('');
   const [addrHits, setAddrHits] = useState([]);
+  const [isFinishing, setIsFinishing] = useState(false);
 
   // forward-geocode (debounced)
   const queryAddr = useCallback(
@@ -160,6 +162,7 @@ export default function SignupWizard() {
             ownerUid: user.uid,
             recipientId: uuidv4(),
             createdAt: serverTimestamp(),
+            profileImageUrl: '/default-avatar.jpg', // Set default avatar immediately
           }
         );
         setStep(2);
@@ -206,9 +209,31 @@ export default function SignupWizard() {
           ({ ...p, [field]: field === 'images' ? [...p.images, url] : url })
         );
 
+        // Extract colors if this is a banner image
+        let bannerColors = [];
+        if (field === 'profileBannerUrl') {
+          try {
+            console.log('Extracting colors from banner image...');
+            bannerColors = await extractDominantColors(file);
+            console.log('Extracted colors:', bannerColors);
+            setData(p => ({ ...p, bannerColors }));
+          } catch (error) {
+            console.error('Error extracting colors:', error);
+            // Continue without colors if extraction fails
+          }
+        }
+
+        // Save to database
+        const updateData = { [field]: field === 'images' ? arrayUnion(url) : url };
+        if (field === 'profileBannerUrl' && bannerColors.length > 0) {
+          updateData.bannerColors = bannerColors;
+          console.log('Saving banner colors to database:', bannerColors);
+        }
+
+        console.log('Saving to database:', updateData);
         await setDoc(
           doc(db, 'recipients', auth.currentUser.uid),
-          { [field]: field === 'images' ? arrayUnion(url) : url },
+          updateData,
           { merge: true }
         );
       }
@@ -218,15 +243,78 @@ export default function SignupWizard() {
   /* Finish */
   // persist URL so finish() can't overwrite
   const finish = async () => {
-    const clean = Object.fromEntries(
-      Object.entries(data).filter(([, v]) => v !== '')
-    );
-    await setDoc(
-      doc(db, 'recipients', auth.currentUser.uid),
-      { ...clean, completed: true, completedAt: serverTimestamp() },
-      { merge: true }
-    );
-    nav('/dashboard');
+    if (isFinishing) return; // Prevent multiple clicks
+    setIsFinishing(true);
+    
+    try {
+      console.log('Finish: Original data:', data);
+      console.log('Finish: Banner colors before filtering:', data.bannerColors);
+      
+      // Wait a moment for any pending uploads to complete
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Get the latest data from the database to ensure we have the most recent banner colors
+      try {
+        const docSnap = await getDoc(doc(db, 'recipients', auth.currentUser.uid));
+        if (docSnap.exists()) {
+          const latestData = docSnap.data();
+          console.log('Finish: Latest data from database:', latestData);
+          console.log('Finish: Latest banner colors from database:', latestData.bannerColors);
+          
+          // Merge the latest data with current form data
+          const mergedData = { ...data, ...latestData };
+          console.log('Finish: Merged data:', mergedData);
+          
+          const clean = Object.fromEntries(
+            Object.entries(mergedData).filter(([k, v]) => {
+              // Keep bannerColors even if it's an empty array
+              if (k === 'bannerColors') {
+                console.log('Finish: Keeping bannerColors:', v);
+                return true;
+              }
+              // Keep other non-empty values
+              const shouldKeep = v !== '';
+              if (!shouldKeep) {
+                console.log('Finish: Filtering out:', k, v);
+              }
+              return shouldKeep;
+            })
+          );
+          
+          console.log('Finish: Cleaned data:', clean);
+          console.log('Finish: Banner colors after filtering:', clean.bannerColors);
+          
+          const finalData = { ...clean, completed: true, completedAt: serverTimestamp() };
+          console.log('Finish: Final data to save:', finalData);
+          
+          await setDoc(
+            doc(db, 'recipients', auth.currentUser.uid),
+            finalData,
+            { merge: true }
+          );
+        }
+      } catch (error) {
+        console.error('Finish: Error getting latest data:', error);
+        // Fallback to original logic
+        const clean = Object.fromEntries(
+          Object.entries(data).filter(([k, v]) => {
+            if (k === 'bannerColors') return true;
+            return v !== '';
+          })
+        );
+        await setDoc(
+          doc(db, 'recipients', auth.currentUser.uid),
+          { ...clean, completed: true, completedAt: serverTimestamp() },
+          { merge: true }
+        );
+      }
+      
+      nav('/dashboard');
+    } catch (error) {
+      console.error('Finish: Error during finish process:', error);
+      setStatus('Error completing profile. Please try again.');
+      setIsFinishing(false);
+    }
   };
 
 
@@ -554,8 +642,10 @@ export default function SignupWizard() {
 
           {/* Nav */}
           <div className="nav-buttons">
-            <button className="secondary" onClick={() => setStep(2)}>Back</button>
-            <button onClick={finish}>Finish</button>
+            <button className="secondary" onClick={() => setStep(2)} disabled={isFinishing}>Back</button>
+            <button onClick={finish} disabled={isFinishing}>
+              {isFinishing ? 'Finishing...' : 'Finish'}
+            </button>
           </div>
         </section>
       )}

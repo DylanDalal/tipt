@@ -20,9 +20,20 @@ export default function Navbar() {
       if (user) {
         try {
           const snap = await getDoc(doc(db, 'recipients', user.uid));
-          setPhoto(snap.exists() ? snap.data().profileImageUrl || '' : '');
+          if (snap.exists()) {
+            const userData = snap.data();
+            // Show default avatar during signup, custom avatar after completion
+            if (userData.completed) {
+              setPhoto(userData.profileImageUrl || '/default-avatar.jpg');
+            } else {
+              // User is still in signup wizard - show default avatar
+              setPhoto('/default-avatar.jpg');
+            }
+          } else {
+            setPhoto('/default-avatar.jpg');
+          }
         } catch {
-          setPhoto('');
+          setPhoto('/default-avatar.jpg');
         }
       } else {
         setPhoto('');
@@ -62,7 +73,7 @@ export default function Navbar() {
         {user && (
           <div ref={menuRef} className="avatar-wrapper">
             <img
-              src={photo || '/default-avatar.png'}
+              src={photo}
               alt="profile"
               className="avatar-img"
               onClick={() => setOpen(p => !p)}

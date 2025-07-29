@@ -1,7 +1,7 @@
 // src/Profile.jsx
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db } from './firebase';
@@ -13,6 +13,8 @@ export default function Profile() {
   const [d, setD] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [copiedColor, setCopiedColor] = useState(null);
+
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -22,22 +24,28 @@ export default function Profile() {
   }, []);
 
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const docSnap = await getDoc(doc(db, 'recipients', uid));
+    if (!uid) return;
+
+    // Set up real-time listener for profile changes
+    const unsubscribe = onSnapshot(
+      doc(db, 'recipients', uid),
+      (docSnap) => {
         if (docSnap.exists()) {
-          setD(docSnap.data());
+          const data = docSnap.data();
+          console.log('Profile: Received update:', data);
+          console.log('Profile: Banner colors in update:', data.bannerColors);
+          setD(data);
         }
-      } catch (error) {
-        console.error('Error fetching profile:', error);
-      } finally {
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Error listening to profile changes:', error);
         setLoading(false);
       }
-    };
-    
-    if (uid) {
-      fetchProfile();
-    }
+    );
+
+    // Cleanup listener on unmount
+    return () => unsubscribe();
   }, [uid]);
 
   // Separate effect for tracking profile views to avoid double counting
@@ -76,6 +84,8 @@ export default function Profile() {
   const handleEdit = () => {
     navigate(`/profile/${uid}/edit`); 
   };
+
+
 
   // Handle link clicks with analytics tracking
   // Open the link immediately and then track the click. Mobile browsers
@@ -127,6 +137,12 @@ export default function Profile() {
   if (loading) return <p>Loading…</p>;
   if (!d) return <p>Profile not found</p>;
 
+  // Debug logging
+  console.log('Profile data:', d);
+  console.log('Banner colors:', d.bannerColors);
+  console.log('Banner URL:', d.profileBannerUrl);
+  console.log('Has banner colors:', d.bannerColors && d.bannerColors.length > 0);
+
   const canEdit = currentUser && currentUser.uid === uid;
 
   const venmoLink = d.venmoUsername
@@ -140,18 +156,105 @@ export default function Profile() {
     : d.payPalUrl;
 
   return (
-    <article style={{maxWidth:680,margin:'5rem auto',padding:'0 1rem'}}>
+    <article style={{
+      maxWidth: 680,
+      margin: '5rem auto',
+      padding: '0 1rem',
+      display: 'block',
+      position: 'relative',
+      zIndex: 1
+    }}>
       {/* Edit button for profile owner */}
 
 
       {/* banner */}
-      {d.profileBannerUrl&&<img src={d.profileBannerUrl} alt="banner"
-          style={{width:'100%',borderRadius:8,marginBottom:16}}/>}
+      {d.profileBannerUrl && (
+        <img 
+          src={d.profileBannerUrl} 
+          alt="banner"
+          style={{
+            width: '100%',
+            borderRadius: 8,
+            marginBottom: 16,
+            display: 'block'
+          }}
+        />
+      )}
+
+      {/* banner colors */}
+      {d.bannerColors && d.bannerColors.length > 0 && (
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          marginBottom: '16px',
+          justifyContent: 'center',
+          padding: '12px',
+          backgroundColor: '#f8f9fa',
+          borderRadius: '8px',
+          border: '1px solid #e9ecef'
+        }}>
+          <div style={{ fontSize: '12px', color: '#666', marginRight: '8px', display: 'flex', alignItems: 'center' }}>
+            Colors:
+          </div>
+          {d.bannerColors.map((color, index) => {
+            const roles = ['Primary', 'Secondary', 'Highlight'];
+            const role = roles[index] || `Color ${index + 1}`;
+            return (
+              <div key={index} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                <div
+                  title={`${role}: ${color} (Click to copy)`}
+                  onClick={async () => {
+                    try {
+                      await navigator.clipboard.writeText(color);
+                      setCopiedColor(color);
+                      setTimeout(() => setCopiedColor(null), 2000);
+                    } catch (error) {
+                      console.error('Failed to copy color to clipboard:', error);
+                      // Fallback for older browsers
+                      const textArea = document.createElement('textarea');
+                      textArea.value = color;
+                      document.body.appendChild(textArea);
+                      textArea.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(textArea);
+                      setCopiedColor(color);
+                      setTimeout(() => setCopiedColor(null), 2000);
+                    }
+                  }}
+                  style={{
+                    width: '40px',
+                    height: '40px',
+                    backgroundColor: color,
+                    borderRadius: '50%',
+                    border: copiedColor === color ? '3px solid #008080' : '2px solid #fff',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                    cursor: 'pointer',
+                    transform: copiedColor === color ? 'scale(1.1)' : 'scale(1)',
+                    transition: 'all 0.2s ease'
+                  }}
+                />
+                <div style={{ 
+                  fontSize: '10px', 
+                  color: '#666', 
+                  fontWeight: '500',
+                  textAlign: 'center'
+                }}>
+                  {role}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+
+
+
 
       {/* header */}
       <header style={{display:'flex',gap:16,alignItems:'center'}}>
-        {d.profileImageUrl&&<img src={d.profileImageUrl} alt="profile" width={120}
-            style={{borderRadius:'50%'}}/>}
+        <img src={d.profileImageUrl || '/default-avatar.jpg'} alt="profile" width={120}
+            style={{borderRadius:'50%'}}/>
         <div>
           <h1 style={{margin:0}}>{d.firstName} {d.lastName}</h1>
           {d.altName&&<h2 style={{margin:'4px 0',fontWeight:400,fontSize:'1rem',opacity:.8}}>

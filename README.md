@@ -57,3 +57,23 @@ Code or open the printed URLs manually.
 When editing your profile you can provide a **Venmo username**, a **Cash App
 $cashtag** and a **PayPal.Me username**. The app turns these handles into
 clickable payment links on your public profile.
+
+## Banner Color Extraction
+
+When users upload a banner image to their profile, the app automatically extracts
+the three most prevalent colors from the image and displays them as clickable
+color swatches on the profile page. Users can click on any color swatch to copy
+the hex color code to their clipboard.
+
+### Features:
+- **Automatic color extraction**: Uses HTML5 Canvas to analyze image pixels
+- **Color quantization**: Reduces similar colors to get more distinct results
+- **Interactive swatches**: Click to copy hex color codes
+- **Visual feedback**: Swatches scale and change border when clicked
+- **Fallback colors**: Default gray colors if extraction fails
+
+### Technical details:
+- Colors are extracted using a quantization algorithm that groups similar colors
+- The algorithm filters out very similar colors to ensure diversity
+- Colors are stored in the `bannerColors` field in Firestore
+- The extraction happens automatically during banner image upload
