@@ -15,6 +15,24 @@ import {
 import debounce from 'lodash.debounce';
 import { extractDominantColors } from './colorExtractor';
 
+// Function to extract YouTube video ID from various URL formats
+const extractYouTubeVideoId = (url) => {
+  if (!url) return null;
+  
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+    /youtu\.be\/([^&\n?#]+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  
+  return null;
+};
+
 // static options
 const SUBSCRIPTION_OPTIONS = ['monthly', 'yearly'];
 const GENRE_OPTIONS = [
@@ -52,6 +70,7 @@ export default function EditProfile() {
   const [addrHits, setAddrHits] = useState([]);
   const [status, setStatus] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
 
   // form
   const { register, setValue, handleSubmit, watch, trigger,
@@ -310,6 +329,126 @@ export default function EditProfile() {
           </div>
           <div className="flex-half">
             <input placeholder="TikTok URL" {...register('tikTokUrl')} />
+          </div>
+        </div>
+        <div className="row cols-2">
+          <div className="flex-half">
+            <input placeholder="Twitter URL" {...register('twitterUrl')} />
+          </div>
+          <div className="flex-half">
+            <input placeholder="Facebook URL" {...register('facebookUrl')} />
+          </div>
+        </div>
+        <div className="row cols-2">
+          <div className="flex-half">
+            <input placeholder="Instagram URL" {...register('instagramUrl')} />
+          </div>
+          <div className="flex-half">
+            {/* Empty div for layout balance */}
+          </div>
+        </div>
+
+        {/* YouTube Videos */}
+        <div className="row">
+          <div style={{ width: '100%' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#a8a8a5', fontSize: '14px' }}>
+              YouTube Videos
+            </label>
+            <input
+              placeholder="YouTube video URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID)"
+              value={videoUrl}
+              onChange={e => setVideoUrl(e.target.value)}
+              style={{ width: '100%', marginBottom: '0.5rem' }}
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                if (videoUrl && videoUrl.trim()) {
+                  const videoId = extractYouTubeVideoId(videoUrl);
+                  if (videoId) {
+                    // Verify the video exists
+                    try {
+                      const response = await fetch(`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`, {
+                        method: 'HEAD'
+                      });
+                      if (response.ok) {
+                        const currentVideos = watch('videos') || [];
+                        setValue('videos', [...currentVideos, { url: videoUrl, id: videoId }]);
+                        setVideoUrl('');
+                        setStatus('');
+                      } else {
+                        setStatus('Video not found. Please check the URL and try again.');
+                      }
+                    } catch (error) {
+                      setStatus('Error verifying video. Please check your internet connection and try again.');
+                    }
+                  } else {
+                    setStatus('Invalid YouTube URL. Please enter a valid YouTube video URL.');
+                  }
+                }
+              }}
+              style={{
+                background: '#ea8151',
+                color: 'white',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontSize: '12px'
+              }}
+            >
+              Add Video
+            </button>
+            
+            {/* Display added videos */}
+            {(watch('videos') || []).length > 0 && (
+              <div style={{ marginTop: '1rem' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#a8a8a5', fontSize: '14px' }}>Added Videos:</h4>
+                {(watch('videos') || []).map((video, index) => (
+                  <div key={index} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    marginBottom: '0.5rem',
+                    padding: '0.5rem',
+                    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px'
+                  }}>
+                    <img
+                      src={`https://img.youtube.com/vi/${video.id}/mqdefault.jpg`}
+                      alt="Video thumbnail"
+                      style={{
+                        width: '60px',
+                        height: '45px',
+                        borderRadius: '4px',
+                        objectFit: 'cover'
+                      }}
+                    />
+                    <span style={{ flex: 1, fontSize: '12px', color: '#d0d0d0' }}>
+                      {video.url}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const currentVideos = watch('videos') || [];
+                        setValue('videos', currentVideos.filter((_, i) => i !== index));
+                      }}
+                      style={{
+                        background: '#ff4444',
+                        color: 'white',
+                        border: 'none',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '10px'
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

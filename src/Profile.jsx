@@ -51,6 +51,8 @@ const darkenColor = (hexColor, amount = .1) => {
   return darkHex;
 };
 
+
+
 // Payment methods configuration
 const PAYMENT_METHODS = [
   {
@@ -285,13 +287,13 @@ const ActionIcon = ({ icon, data, onLinkClick }) => {
       alignItems: 'center',
       justifyContent: 'center',
       cursor: 'pointer',
-      opacity: '0.55',
+      opacity: '0.6',
       transition: 'opacity 0.3s ease',
       flexShrink: 0
     }} 
     onClick={() => onLinkClick(icon.id, url)}
-          onMouseEnter={(e) => e.target.style.opacity = '0.8'}
-      onMouseLeave={(e) => e.target.style.opacity = '0.55'}
+          onMouseEnter={(e) => e.target.style.opacity = '1'}
+      onMouseLeave={(e) => e.target.style.opacity = '0.6'}
     >
       <img 
         src={icon.logo} 
@@ -643,7 +645,7 @@ export default function Profile() {
                     alignItems: 'center',
                     justifyContent: 'flex-start',
                     marginBottom: '0.5rem',
-                    opacity: '0.6'
+                    opacity: '1'
                   }}>
                     {getActiveActionIcons(d).map((icon) => (
                       <ActionIcon
@@ -698,18 +700,28 @@ export default function Profile() {
               {/* Social Media Links */}
               <div style={{
                 display: 'flex',
-                gap: '1rem',
+                justifyContent: 'center',
                 alignItems: 'center',
-                flexWrap: 'wrap'
+                width: '100%'
               }}>
-                {getActiveSocialMediaLinks(d).map((link) => (
-                  <SocialMediaLink
-                    key={link.id}
-                    link={link}
-                    data={d}
-                    onLinkClick={handleLinkClick}
-                  />
-                ))}
+                <div style={{
+                  display: 'flex',
+                  gap: '1vw',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  marginLeft: `${100 / (getActiveSocialMediaLinks(d).length * 2) - 3}%`,
+                  marginRight: `${100 / (getActiveSocialMediaLinks(d).length * 2) - 3}%`
+                }}>
+                  {getActiveSocialMediaLinks(d).map((link) => (
+                    <SocialMediaLink
+                      key={link.id}
+                      link={link}
+                      data={d}
+                      onLinkClick={handleLinkClick}
+                    />
+                  ))}
+                </div>
               </div>
 
               {/* Divider Line */}
@@ -886,55 +898,132 @@ export default function Profile() {
             </div>
           )}
 
-          {/* Videos Section - Placeholder for future implementation */}
-          <div style={{
-            width: '100%',
-            boxSizing: 'border-box'
-          }}>
-            <h2 style={{
-              margin: '0 0 1rem 0',
-              color: '#a8a8a5',
-              fontSize: '18px',
-              fontWeight: '600'
-            }}>
-              Videos
-            </h2>
-            
+          {/* Videos Section */}
+          {d.videos && d.videos.length > 0 && (
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-              gap: '1rem'
+              width: '100%',
+              boxSizing: 'border-box'
             }}>
-              <div style={{
-                width: '100%',
-                aspectRatio: '16/9',
-                backgroundColor: 'rgba(64, 64, 64, 0.8)',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#888',
-                fontSize: '14px',
-                backdropFilter: 'blur(5px)'
+              <h2 style={{
+                margin: '0 0 1rem 0',
+                color: '#a8a8a5',
+                fontSize: '18px',
+                fontWeight: '600'
               }}>
-                Video 1
-              </div>
-              <div style={{
-                width: '100%',
-                aspectRatio: '16/9',
-                backgroundColor: 'rgba(64, 64, 64, 0.8)',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#888',
-                fontSize: '14px',
-                backdropFilter: 'blur(5px)'
-              }}>
-                Video 2
+                Videos
+              </h2>
+              
+              <div style={{ width: '100%', overflow: 'scroll', maxWidth: '800px' }}>
+                <div 
+                  className="video-scroll"
+                  style={{
+                    display: 'flex',
+                    overflowX: 'auto',
+                    gap: '1rem',
+                    paddingBottom: '0.5rem',
+                    width: '100%',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {d.videos.map((video, index) => (
+                    <div
+                      key={index}
+                      style={{
+                        position: 'relative',
+                        width: d.videos.length === 2 ? 'calc(50% - 0.5rem)' : '330px',
+                        height: d.videos.length === 2 ? 'calc((50% - 0.5rem) * 0.5625)' : '185px',
+                        borderRadius: '12px',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        transition: 'transform 0.2s ease',
+                        backgroundColor: 'rgba(64, 64, 64, 0.8)',
+                        backdropFilter: 'blur(5px)',
+                        flexShrink: d.videos.length === 2 ? 1 : 0
+                      }}
+                      onClick={() => {
+                        // Open video in new tab
+                        window.open(video.url, '_blank', 'noopener,noreferrer');
+                        
+                        // Track analytics if not the profile owner
+                        if (!currentUser || currentUser.uid !== uid) {
+                          (async () => {
+                            let visitorLocation = { location: 'Unknown' };
+                            try {
+                              visitorLocation = await getVisitorLocation();
+                            } catch (error) {
+                              console.error('Error getting visitor location:', error);
+                            }
+                            try {
+                              await trackLinkClick(uid, 'youtube_video', video.url, visitorLocation);
+                            } catch (error) {
+                              console.error('Error tracking video click:', error);
+                            }
+                          })();
+                        }
+                      }}
+
+                    >
+                      {/* Video Thumbnail */}
+                      <img
+                        src={`https://img.youtube.com/vi/${video.id}/maxresdefault.jpg`}
+                        alt="Video thumbnail"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          borderRadius: '12px'
+                        }}
+                        onError={(e) => {
+                          // Fallback to medium quality thumbnail if maxresdefault fails
+                          e.target.src = `https://img.youtube.com/vi/${video.id}/hqdefault.jpg`;
+                        }}
+                      />
+                      
+                      {/* Play Button Overlay */}
+                      <div style={{
+                        position: 'absolute',
+                        top: '50%',
+                        left: '50%',
+                        transform: 'translate(-50%, -50%)',
+                        width: '60px',
+                        height: '60px',
+                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        pointerEvents: 'none'
+                      }}>
+                        <div style={{
+                          width: 0,
+                          height: 0,
+                          borderLeft: '20px solid white',
+                          borderTop: '12px solid transparent',
+                          borderBottom: '12px solid transparent',
+                          marginLeft: '4px'
+                        }} />
+                      </div>
+                      
+                      {/* Video Title/Info Overlay */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        background: 'linear-gradient(transparent, rgba(0, 0, 0, 0.8))',
+                        padding: '1rem',
+                        color: 'white',
+                        fontSize: '12px',
+                        fontWeight: '500'
+                      }}>
+                        YouTube Video
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Calendar Section - Placeholder for future implementation */}
           <div style={{
@@ -1013,6 +1102,16 @@ export default function Profile() {
         }
         
         .gallery-scroll {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        
+        /* Video scrollbar styling - hidden */
+        .video-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        
+        .video-scroll {
           -ms-overflow-style: none;  /* IE and Edge */
           scrollbar-width: none;  /* Firefox */
         }

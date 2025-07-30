@@ -29,6 +29,24 @@ import * as yup from 'yup';
 import debounce from 'lodash.debounce';
 import { extractDominantColors } from './colorExtractor';
 
+// Function to extract YouTube video ID from various URL formats
+const extractYouTubeVideoId = (url) => {
+  if (!url) return null;
+  
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+    /youtube\.com\/watch\?.*v=([^&\n?#]+)/,
+    /youtu\.be\/([^&\n?#]+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+  
+  return null;
+};
+
 const SUBSCRIPTION_OPTIONS = ['monthly', 'yearly'];
 const GENRE_OPTIONS = [
   'Rock', 'Pop', 'Hip-Hop', 'Jazz', 'Country', 'Electronic', 'Classical',
@@ -45,7 +63,8 @@ const FRESH = {
   tags: [], genres: [], themeColor: '#008080',
   images: [],
   payPalUrl: '', venmoUrl: '', cashAppTag: '', spotifyUrl: '',
-  youTubeUrl: '', tikTokUrl: '',
+  youTubeUrl: '', tikTokUrl: '', twitterUrl: '', facebookUrl: '', instagramUrl: '',
+  videos: [],
 };
 
 const schema = yup.object({
@@ -602,6 +621,142 @@ export default function SignupWizard() {
                 value={data.tikTokUrl}
                 onChange={e => setData(p => ({ ...p, tikTokUrl: e.target.value }))}
               />
+            </div>
+          </div>
+
+          <div className="row cols-2">
+            <div className="flex-half">
+              <input
+                placeholder="Twitter URL"
+                value={data.twitterUrl}
+                onChange={e => setData(p => ({ ...p, twitterUrl: e.target.value }))}
+              />
+            </div>
+            <div className="flex-half">
+              <input
+                placeholder="Facebook URL"
+                value={data.facebookUrl}
+                onChange={e => setData(p => ({ ...p, facebookUrl: e.target.value }))}
+              />
+            </div>
+          </div>
+
+          <div className="row cols-2">
+            <div className="flex-half">
+              <input
+                placeholder="Instagram URL"
+                value={data.instagramUrl}
+                onChange={e => setData(p => ({ ...p, instagramUrl: e.target.value }))}
+              />
+            </div>
+            <div className="flex-half">
+              {/* Empty div for layout balance */}
+            </div>
+          </div>
+
+          {/* YouTube Videos */}
+          <div className="row">
+            <div style={{ width: '100%' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#a8a8a5', fontSize: '14px' }}>
+                YouTube Videos
+              </label>
+              <input
+                placeholder="YouTube video URL (e.g., https://www.youtube.com/watch?v=VIDEO_ID)"
+                value={data.videoUrl || ''}
+                onChange={e => setData(p => ({ ...p, videoUrl: e.target.value }))}
+                style={{ width: '100%', marginBottom: '0.5rem' }}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (data.videoUrl && data.videoUrl.trim()) {
+                    const videoId = extractYouTubeVideoId(data.videoUrl);
+                    if (videoId) {
+                      // Verify the video exists
+                      try {
+                        const response = await fetch(`https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`, {
+                          method: 'HEAD'
+                        });
+                        if (response.ok) {
+                          setData(p => ({
+                            ...p,
+                            videos: [...p.videos, { url: data.videoUrl, id: videoId }],
+                            videoUrl: ''
+                          }));
+                          setStatus('');
+                        } else {
+                          setStatus('Video not found. Please check the URL and try again.');
+                        }
+                      } catch (error) {
+                        setStatus('Error verifying video. Please check your internet connection and try again.');
+                      }
+                    } else {
+                      setStatus('Invalid YouTube URL. Please enter a valid YouTube video URL.');
+                    }
+                  }
+                }}
+                style={{
+                  background: '#ea8151',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+              >
+                Add Video
+              </button>
+              
+              {/* Display added videos */}
+              {data.videos.length > 0 && (
+                <div style={{ marginTop: '1rem' }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', color: '#a8a8a5', fontSize: '14px' }}>Added Videos:</h4>
+                  {data.videos.map((video, index) => (
+                    <div key={index} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      marginBottom: '0.5rem',
+                      padding: '0.5rem',
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                      borderRadius: '8px'
+                    }}>
+                      <img
+                        src={`https://img.youtube.com/vi/${video.id}/mqdefault.jpg`}
+                        alt="Video thumbnail"
+                        style={{
+                          width: '60px',
+                          height: '45px',
+                          borderRadius: '4px',
+                          objectFit: 'cover'
+                        }}
+                      />
+                      <span style={{ flex: 1, fontSize: '12px', color: '#d0d0d0' }}>
+                        {video.url}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setData(p => ({
+                          ...p,
+                          videos: p.videos.filter((_, i) => i !== index)
+                        }))}
+                        style={{
+                          background: '#ff4444',
+                          color: 'white',
+                          border: 'none',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '4px',
+                          cursor: 'pointer',
+                          fontSize: '10px'
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
