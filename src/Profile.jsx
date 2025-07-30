@@ -593,7 +593,7 @@ export default function Profile() {
               overflow: 'hidden',
               width: '100%',
               maxWidth: '100%',
-              border: `1px solid ${tertiaryColor}`,
+              border: `2px solid ${tertiaryColor}`,
               boxShadow: `0 0 20px ${tertiaryColor}20`,
               zIndex: 2,
               backdropFilter: 'blur(6px)'
