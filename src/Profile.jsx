@@ -426,7 +426,7 @@ export default function Profile() {
     } else if (linkType === 'paypal') {
       url = `https://paypal.me/${linkValue.replace(/^@/, '')}`;
     } else if (linkType === 'cashapp') {
-      url = `https://cash.app/${linkValue.replace(/^\$/, '')}`;
+      url = `${linkValue.replace(/^\$/, '')}`;
     }
     
     // Open the link first to preserve the user gesture
