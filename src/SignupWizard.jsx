@@ -15,6 +15,8 @@ import {
   getDoc,
   collection,
   getDocs,
+  query,
+  where,
   serverTimestamp,
 } from 'firebase/firestore';
 import {
@@ -28,6 +30,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import debounce from 'lodash.debounce';
 import { extractDominantColors } from './colorExtractor';
+import { createDomain, isValidDomain, isReservedDomain } from './utils/domainUtils';
 
 // Function to extract YouTube video ID from various URL formats
 const extractYouTubeVideoId = (url) => {
@@ -53,7 +56,7 @@ const GENRE_OPTIONS = [
 ];
 const FRESH = {
   email: '', password: '',
-  firstName: '', lastName: '', altName: '',
+  firstName: '', lastName: '', altName: '', domain: '',
   phone: '', street: '', city: '', state: '', postalCode: '',
   subscription: '',
   acceptsApplePay: false, acceptsGooglePay: false, acceptsSamsungPay: false,
@@ -71,6 +74,11 @@ const schema = yup.object({
   firstName: yup.string().required('First name required'),
   lastName:  yup.string().required('Last name required'),
   altName:   yup.string().required('Alt / stage name required'),
+  domain: yup.string()
+    .test('domain-format', 'Invalid domain format', (value) => isValidDomain(value))
+    .test('domain-reserved', 'This domain is reserved', (value) => !isReservedDomain(value))
+    .test('domain-available', 'Domain is already taken', () => domainAvailable)
+    .required('Domain required'),
   phone: yup.string().matches(/^\+?\d{10,15}$/, 'Phone: 10-15 digits').required(),
   street: yup.string().required('Street required'),
   city: yup.string().required('City required'),
@@ -98,6 +106,37 @@ export default function SignupWizard() {
   const [data, setData] = useState(FRESH);
   const [status, setStatus] = useState('');
   const [tagOptions, setTagOptions] = useState([]);
+  const [domainAvailable, setDomainAvailable] = useState(true);
+  const [checkingDomain, setCheckingDomain] = useState(false);
+
+  // Domain availability checker
+  const checkDomainAvailability = useCallback(
+    debounce(async (domain) => {
+      if (!domain || domain.length < 3) {
+        setDomainAvailable(true);
+        return;
+      }
+
+      // Check if domain is reserved
+      if (isReservedDomain(domain)) {
+        setDomainAvailable(false);
+        return;
+      }
+
+      setCheckingDomain(true);
+      try {
+        const q = query(collection(db, 'recipients'), where('domain', '==', domain));
+        const querySnapshot = await getDocs(q);
+        setDomainAvailable(querySnapshot.empty);
+      } catch (error) {
+        console.error('Error checking domain availability:', error);
+        setDomainAvailable(false);
+      } finally {
+        setCheckingDomain(false);
+      }
+    }, 500),
+    []
+  );
   const [uploadPct, setUploadPct] = useState({});
   const [galleryFiles, setGalleryFiles] = useState([]);
   const [showErrors, setShowErrors] = useState(false);
@@ -400,6 +439,33 @@ export default function SignupWizard() {
             <div>
               <label>Alt / Stage name *</label>
               <input {...register('altName')} />
+            </div>
+          </div>
+
+          {/* Domain */}
+          <div className="row">
+            <div>
+              <label>Domain *</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input 
+                  {...register('domain')} 
+                  placeholder="yourname"
+                  style={{ flex: 1 }}
+                                  onChange={(e) => {
+                  const domain = createDomain(e.target.value);
+                  e.target.value = domain;
+                  checkDomainAvailability(domain);
+                }}
+                />
+                <span style={{ color: '#666', fontSize: '14px' }}>.tipt.co</span>
+              </div>
+              <small style={{ 
+                color: checkingDomain ? '#666' : (domainAvailable ? '#4CAF50' : '#f44336'), 
+                fontSize: '12px' 
+              }}>
+                {checkingDomain ? 'Checking availability...' : 
+                 domainAvailable ? '✓ Domain available' : '✗ Domain already taken'}
+              </small>
             </div>
           </div>
 

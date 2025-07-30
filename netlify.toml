@@ -3,3 +3,15 @@
   [headers.values]
     X-Frame-Options = "ALLOWALL"
     Content-Security-Policy = "frame-ancestors *"
+
+# Handle domain-based routing for vanity URLs
+[[redirects]]
+  from = "/:domain"
+  to = "/index.html"
+  status = 200
+
+# Fallback for all other routes
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

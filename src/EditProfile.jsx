@@ -8,12 +8,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { auth, db, storage } from './firebase';
 import {
   doc, getDoc, setDoc, arrayUnion, serverTimestamp,
+  collection, getDocs, query, where,
 } from 'firebase/firestore';
 import {
   ref, uploadBytesResumable, getDownloadURL,
 } from 'firebase/storage';
 import debounce from 'lodash.debounce';
 import { extractDominantColors } from './colorExtractor';
+import { createDomain, isValidDomain, isReservedDomain } from './utils/domainUtils';
 
 // Function to extract YouTube video ID from various URL formats
 const extractYouTubeVideoId = (url) => {
@@ -44,6 +46,11 @@ const schema = yup.object({
   firstName: yup.string().required(),
   lastName:  yup.string().required(),
   altName:   yup.string().required(),
+  domain: yup.string()
+    .test('domain-format', 'Invalid domain format', (value) => isValidDomain(value))
+    .test('domain-reserved', 'This domain is reserved', (value) => !isReservedDomain(value))
+    .test('domain-available', 'Domain is already taken', () => domainAvailable)
+    .required('Domain required'),
   phone:     yup.string().matches(/^\+?\d{10,15}$/,'10–15 digits').required(),
   street:    yup.string().required(),
   city:      yup.string().required(),
@@ -60,7 +67,7 @@ const schema = yup.object({
 }).required();
 
 export default function EditProfile() {
-  const { uid } = useParams();
+  const { uid, identifier } = useParams();
   const nav     = useNavigate();
 
   // local state
@@ -71,6 +78,40 @@ export default function EditProfile() {
   const [status, setStatus] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
+  const [domainAvailable, setDomainAvailable] = useState(true);
+  const [checkingDomain, setCheckingDomain] = useState(false);
+
+  // Domain availability checker
+  const checkDomainAvailability = useCallback(
+    debounce(async (domain, currentUid) => {
+      if (!domain || domain.length < 3) {
+        setDomainAvailable(true);
+        return;
+      }
+
+      // Check if domain is reserved
+      if (isReservedDomain(domain)) {
+        setDomainAvailable(false);
+        return;
+      }
+
+      setCheckingDomain(true);
+      try {
+        const q = query(collection(db, 'recipients'), where('domain', '==', domain));
+        const querySnapshot = await getDocs(q);
+        // Domain is available if no results OR if the only result is the current user
+        const isAvailable = querySnapshot.empty || 
+          (querySnapshot.docs.length === 1 && querySnapshot.docs[0].id === currentUid);
+        setDomainAvailable(isAvailable);
+      } catch (error) {
+        console.error('Error checking domain availability:', error);
+        setDomainAvailable(false);
+      } finally {
+        setCheckingDomain(false);
+      }
+    }, 500),
+    []
+  );
 
   // form
   const { register, setValue, handleSubmit, watch, trigger,
@@ -80,14 +121,14 @@ export default function EditProfile() {
   /*──────────────── fetch current doc ────────────────*/
   useEffect(() => {
     (async () => {
-      const snap = await getDoc(doc(db,'recipients',uid));
+      const snap = await getDoc(doc(db,'recipients',profileIdentifier));
       if (!snap.exists()) { nav('/'); return; }
       const d = snap.data();
       // hydrate form
       Object.entries(d).forEach(([k,v])=> setValue(k,v));
       setAddrQ([d.street,d.city,d.state].filter(Boolean).join(', '));
     })();
-  }, [uid,nav,setValue]);
+  }, [profileIdentifier,nav,setValue]);
 
   /*──────────────── address autocomplete ─────────────*/
   const queryAddr = useCallback(
@@ -116,7 +157,7 @@ export default function EditProfile() {
     
     setIsUploading(true);
     const task = uploadBytesResumable(
-      ref(storage,`recipients/${uid}/${path}`),file);
+      ref(storage,`recipients/${profileIdentifier}/${path}`),file);
     task.on('state_changed',
       s=>setUploadPct(p=>({...p,[path]:
         Math.round(s.bytesTransferred/s.totalBytes*100)})),
@@ -150,7 +191,7 @@ export default function EditProfile() {
         console.log('EditProfile: Saving to database:', updateData);
 
         await setDoc(
-          doc(db,'recipients',uid),
+          doc(db,'recipients',profileIdentifier),
           updateData,
           { merge:true });
         
@@ -171,7 +212,7 @@ export default function EditProfile() {
     
     // Get current document to preserve banner colors
     try {
-      const currentDoc = await getDoc(doc(db, 'recipients', uid));
+      const currentDoc = await getDoc(doc(db, 'recipients', profileIdentifier));
       const currentData = currentDoc.exists() ? currentDoc.data() : {};
       console.log('EditProfile: Current document data:', currentData);
       
@@ -184,19 +225,19 @@ export default function EditProfile() {
       
       console.log('EditProfile: Final update data:', updateData);
       await setDoc(
-        doc(db,'recipients',uid),
+        doc(db,'recipients',profileIdentifier),
         updateData,
         { merge:true });
     } catch (error) {
       console.error('EditProfile: Error in onSubmit:', error);
       // Fallback to original behavior
       await setDoc(
-        doc(db,'recipients',uid),
+        doc(db,'recipients',profileIdentifier),
         { ...vals, updatedAt:serverTimestamp() },
         { merge:true });
     }
     
-    nav(`/profile/${uid}`);
+    nav(`/profile/${profileIdentifier}`);
   };
 
   /*──────────────── render ───────────────────────────*/
@@ -212,6 +253,33 @@ export default function EditProfile() {
           <div><label>First name*</label><input {...register('firstName')} /></div>
           <div><label>Last name*</label><input {...register('lastName')} /></div>
           <div><label>Alt / Stage name*</label><input {...register('altName')} /></div>
+        </div>
+
+        {/* Domain */}
+        <div className="row">
+          <div>
+            <label>Domain *</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <input 
+                {...register('domain')} 
+                placeholder="yourname"
+                style={{ flex: 1 }}
+                onChange={(e) => {
+                  const domain = createDomain(e.target.value);
+                  e.target.value = domain;
+                  checkDomainAvailability(domain, profileIdentifier);
+                }}
+              />
+              <span style={{ color: '#666', fontSize: '14px' }}>.tipt.co</span>
+            </div>
+            <small style={{ 
+              color: checkingDomain ? '#666' : (domainAvailable ? '#4CAF50' : '#f44336'), 
+              fontSize: '12px' 
+            }}>
+              {checkingDomain ? 'Checking availability...' : 
+               domainAvailable ? '✓ Domain available' : '✗ Domain already taken'}
+            </small>
+          </div>
         </div>
 
         {/* PHONE + PLAN */}

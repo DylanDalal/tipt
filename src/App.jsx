@@ -15,8 +15,9 @@ export default function App() {
         <Routes>
           <Route path="/signup" element={<SignupWizard />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/profile/:uid" element={<Profile />} />
-          <Route path="/profile/:uid/edit"   element={<EditProfile />} />
+          <Route path="/profile/:identifier" element={<Profile />} />
+          <Route path="/profile/:identifier/edit" element={<EditProfile />} />
+          <Route path="/:domain" element={<Profile />} />
           <Route path="*" element={<Home/>} />
         </Routes>
       </div>

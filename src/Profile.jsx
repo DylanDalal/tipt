@@ -309,7 +309,7 @@ const ActionIcon = ({ icon, data, onLinkClick }) => {
 };
 
 export default function Profile() {
-  const { uid } = useParams();
+  const { uid, identifier, domain } = useParams();
   const navigate = useNavigate();
   const [d, setD] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
@@ -350,30 +350,60 @@ export default function Profile() {
     testColorDarkening();
   }, []);
 
+  // Determine the identifier to use (uid, identifier, or domain)
+  const profileIdentifier = uid || identifier || domain;
+
   useEffect(() => {
-    if (!uid) return;
+    if (!profileIdentifier) return;
 
-    // Set up real-time listener for profile changes
-    const unsubscribe = onSnapshot(
-      doc(db, 'recipients', uid),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          console.log('Profile: Received update:', data);
-          console.log('Profile: Banner colors in update:', data.bannerColors);
-          setD(data);
+    // First try to find by UID (if it looks like a Firebase UID)
+    const isFirebaseUID = profileIdentifier.length === 28 && /^[a-zA-Z0-9]+$/.test(profileIdentifier);
+    
+    if (isFirebaseUID) {
+      // Set up real-time listener for profile changes by UID
+      const unsubscribe = onSnapshot(
+        doc(db, 'recipients', profileIdentifier),
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            console.log('Profile: Received update by UID:', data);
+            setD(data);
+          } else {
+            setLoading(false);
+          }
+        },
+        (error) => {
+          console.error('Error listening to profile changes:', error);
+          setLoading(false);
         }
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Error listening to profile changes:', error);
-        setLoading(false);
-      }
-    );
+      );
+      return () => unsubscribe();
+    } else {
+      // Search by domain
+      const findUserByDomain = async () => {
+        try {
+          const q = query(collection(db, 'recipients'), where('domain', '==', profileIdentifier));
+          const querySnapshot = await getDocs(q);
+          
+          if (!querySnapshot.empty) {
+            const userDoc = querySnapshot.docs[0];
+            const data = userDoc.data();
+            console.log('Profile: Found by domain:', data);
+            setD(data);
+          } else {
+            console.log('Profile: No user found with domain:', profileIdentifier);
+          }
+        } catch (error) {
+          console.error('Error finding user by domain:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      
+      findUserByDomain();
+    }
 
-    // Cleanup listener on unmount
-    return () => unsubscribe();
-  }, [uid]);
+  }, [profileIdentifier]);
 
   // Separate effect for tracking profile views to avoid double counting
   useEffect(() => {
@@ -381,20 +411,20 @@ export default function Profile() {
     
     const trackView = async () => {
       // Only track if:
-      // 1. We have a uid
+      // 1. We have a profile identifier
       // 2. We haven't tracked yet in this session
       // 3. Current user is not the profile owner (or no current user)
-      if (uid && !hasTracked && (!currentUser || currentUser.uid !== uid)) {
+      if (profileIdentifier && !hasTracked && (!currentUser || currentUser.uid !== d?.uid)) {
         hasTracked = true;
-        console.log('Tracking profile view for:', { uid, currentUser: currentUser?.uid || 'anonymous' });
+        console.log('Tracking profile view for:', { profileIdentifier, currentUser: currentUser?.uid || 'anonymous' });
         try {
           const visitorLocation = await getVisitorLocation();
-          await trackProfileView(uid, visitorLocation);
+          await trackProfileView(d?.uid || profileIdentifier, visitorLocation);
         } catch (error) {
           console.error('Error tracking profile view:', error);
         }
       } else {
-        console.log('Not tracking profile view:', { uid, hasTracked, isOwner: currentUser?.uid === uid });
+        console.log('Not tracking profile view:', { profileIdentifier, hasTracked, isOwner: currentUser?.uid === d?.uid });
       }
     };
 
@@ -405,10 +435,10 @@ export default function Profile() {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [uid, currentUser]);
+  }, [profileIdentifier, currentUser, d?.uid]);
 
   const handleEdit = () => {
-    navigate(`/profile/${uid}/edit`); 
+    navigate(`/profile/${d?.uid || profileIdentifier}/edit`); 
   };
 
   // Handle link clicks with analytics tracking
@@ -433,7 +463,7 @@ export default function Profile() {
     window.open(url, '_blank', 'noopener,noreferrer');
 
     // Track the click (only if not the profile owner) without blocking the link
-    if (!currentUser || currentUser.uid !== uid) {
+    if (!currentUser || currentUser.uid !== d?.uid) {
       console.log('Tracking link click for non-owner');
       (async () => {
         let visitorLocation = { location: 'Unknown' };
@@ -444,7 +474,7 @@ export default function Profile() {
           console.error('Error getting visitor location:', error);
         }
         try {
-          await trackLinkClick(uid, linkType, url, visitorLocation);
+          await trackLinkClick(d?.uid || profileIdentifier, linkType, url, visitorLocation);
         } catch (error) {
           console.error('Error tracking link click:', error);
         }
@@ -463,7 +493,7 @@ export default function Profile() {
   console.log('Banner URL:', d.profileBannerUrl);
   console.log('Has banner colors:', d.bannerColors && d.bannerColors.length > 0);
 
-  const canEdit = currentUser && currentUser.uid === uid;
+  const canEdit = currentUser && currentUser.uid === d?.uid;
 
   const venmoLink = d.venmoUrl;
   const cashAppLink = d.cashAppTag
