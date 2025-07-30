@@ -1,6 +1,6 @@
 // src/EditProfile.jsx
 import './SignupWizard.css';                  // ← reuse styling
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -41,15 +41,15 @@ const GENRE_OPTIONS = [
   'Rock','Pop','Hip-Hop','Jazz','Country','Electronic','Classical',
 ];
 
-// validation schema (same as wizard, minus email/pw)
-const schema = yup.object({
+// validation schema template (same as wizard, minus email/pw)
+const baseSchema = {
   firstName: yup.string().required(),
   lastName:  yup.string().required(),
   altName:   yup.string().required(),
   domain: yup.string()
     .test('domain-format', 'Invalid domain format', (value) => isValidDomain(value))
     .test('domain-reserved', 'This domain is reserved', (value) => !isReservedDomain(value))
-    .test('domain-available', 'Domain is already taken', () => domainAvailable)
+    // domainAvailable will be injected in component via useMemo
     .required('Domain required'),
   phone:     yup.string().matches(/^\+?\d{10,15}$/,'10–15 digits').required(),
   street:    yup.string().required(),
@@ -64,7 +64,7 @@ const schema = yup.object({
     ['acceptsApplePay','acceptsGooglePay','acceptsSamsungPay'],
     { is:(a,g,s)=>a||g||s, then:s=>s.required('Tax ID required') }
   ),
-}).required();
+};
 
 export default function EditProfile() {
   const { uid, identifier } = useParams();
@@ -80,6 +80,18 @@ export default function EditProfile() {
   const [videoUrl, setVideoUrl] = useState('');
   const [domainAvailable, setDomainAvailable] = useState(true);
   const [checkingDomain, setCheckingDomain] = useState(false);
+
+  // yup schema with dynamic domain availability check
+  const schema = useMemo(() => {
+    return yup.object({
+      ...baseSchema,
+      domain: baseSchema.domain.test(
+        'domain-available',
+        'Domain is already taken',
+        () => domainAvailable,
+      ),
+    }).required();
+  }, [domainAvailable]);
 
   // Domain availability checker
   const checkDomainAvailability = useCallback(

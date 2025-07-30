@@ -1,6 +1,6 @@
 /* SignupWizard.jsx */
 import './SignupWizard.css';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -70,14 +70,15 @@ const FRESH = {
   videos: [],
 };
 
-const schema = yup.object({
+// validation schema template
+const baseSchema = {
   firstName: yup.string().required('First name required'),
   lastName:  yup.string().required('Last name required'),
   altName:   yup.string().required('Alt / stage name required'),
   domain: yup.string()
     .test('domain-format', 'Invalid domain format', (value) => isValidDomain(value))
     .test('domain-reserved', 'This domain is reserved', (value) => !isReservedDomain(value))
-    .test('domain-available', 'Domain is already taken', () => domainAvailable)
+    // domainAvailable will be injected in component via useMemo
     .required('Domain required'),
   phone: yup.string().matches(/^\+?\d{10,15}$/, 'Phone: 10-15 digits').required(),
   street: yup.string().required('Street required'),
@@ -97,7 +98,7 @@ const schema = yup.object({
       then: s => s.required('Tax ID required for Pay platforms'),
       otherwise: s => s.notRequired(),
     }),
-}).required();
+};
 
 /* ─────────── component ─────────── */
 export default function SignupWizard() {
@@ -108,6 +109,18 @@ export default function SignupWizard() {
   const [tagOptions, setTagOptions] = useState([]);
   const [domainAvailable, setDomainAvailable] = useState(true);
   const [checkingDomain, setCheckingDomain] = useState(false);
+
+  // yup schema with dynamic domain availability check
+  const schema = useMemo(() => {
+    return yup.object({
+      ...baseSchema,
+      domain: baseSchema.domain.test(
+        'domain-available',
+        'Domain is already taken',
+        () => domainAvailable,
+      ),
+    }).required();
+  }, [domainAvailable]);
 
   // Domain availability checker
   const checkDomainAvailability = useCallback(
