@@ -493,19 +493,19 @@ export default function Profile() {
 
       return (
       <div style={{
-        maxWidth: '1230px',
-        margin: '0 auto',
-        padding: window.innerWidth <= 900 ? '0' : '1rem 0',
+        maxWidth: '1200px',
+        margin: '0 0',
+        padding: window.innerWidth <= 900 ? '0' : '0 1rem',
         display: 'flex',
         flexDirection: 'column',
-        gap: window.innerWidth <= 900 ? '0' : '2rem',
+        gap: '0',
         width: '100%',
         boxSizing: 'border-box',
         backgroundColor: 'transparent',
         minHeight: '100vh'
       }}>
         {/* Spacer to account for sticky navbar */}
-        <div className="navbar-spacer" style={{ height: '30px' }}></div>
+        <div className="navbar-spacer" style={{ height: '80px' }}></div>
 
       {/* Main content - responsive layout */}
       <div className="profile-container" style={{
@@ -513,13 +513,13 @@ export default function Profile() {
         gridTemplateColumns: '400px minmax(0, 1fr)',
         gap: '2rem',
         alignItems: 'start',
-        margin: '0 1rem'
+        margin: '0'
       }}>
         
         {/* Mobile-specific spacer for card overlay */}
         <div className="mobile-card-spacer" style={{ 
-          height: window.innerWidth <= 900 ? '2rem' : '0',
-          display: window.innerWidth <= 900 ? 'block' : 'none',
+          height: '20px',
+          display: 'block',
           gridColumn: '1 / -1'
         }}></div>
         {/* Left Column - Profile Information */}
@@ -657,7 +657,7 @@ export default function Profile() {
                     ))}
                   </div>
                   
-                  <h1 style={{
+                  <h1 className="profile-name" style={{
                     margin: '0 0 0 0',
                     color: 'white',
                     fontSize: 'clamp(1.5rem, 4vw, 2rem)',
@@ -668,7 +668,7 @@ export default function Profile() {
                     {d.firstName}
                   </h1>
                   {d.altName && (
-                    <p style={{
+                    <p className="profile-lastname" style={{
                       margin: '0 0 0.25rem 0',
                       color: '#c2c2c2',
                       fontSize: 'clamp(1.5rem, 4vw, 2rem)',
@@ -1184,10 +1184,20 @@ export default function Profile() {
           
           /* Profile image sizing for mobile */
           .profile-image {
-            width: clamp(60px, 16vw, 130px) !important;
-            height: clamp(70px, 18vw, 150px) !important;
-            min-width: 60px !important;
-            min-height: 70px !important;
+            width: clamp(150px, 30vw, 250px) !important;
+            height: clamp(180px, 35vw, 300px) !important;
+            min-width: 150px !important;
+            min-height: 180px !important;
+          }
+          
+          /* Name text sizing for mobile */
+          .profile-name {
+            font-size: clamp(2rem, 10vw, 3rem) !important;
+            line-height: .8 !important;
+          }
+          
+          .profile-lastname {
+            font-size: clamp(1.8rem, 10vw, 2.8rem) !important;
           }
         }
         
@@ -1211,10 +1221,19 @@ export default function Profile() {
           
           /* Profile image on very small screens */
           .profile-image {
-            width: clamp(60px, 20vw, 100px) !important;
-            height: clamp(70px, 22vw, 120px) !important;
-            min-width: 60px !important;
-            min-height: 70px !important;
+            width: clamp(130px, 28vw, 220px) !important;
+            height: clamp(160px, 32vw, 280px) !important;
+            min-width: 130px !important;
+            min-height: 160px !important;
+          }
+          
+          /* Name text sizing for very small screens */
+          .profile-name {
+            font-size: clamp(1.8rem, 5vw, 2.5rem) !important;
+          }
+          
+          .profile-lastname {
+            font-size: clamp(1.6rem, 4.5vw, 2.3rem) !important;
           }
         }
       `}</style>
