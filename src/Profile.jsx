@@ -494,8 +494,8 @@ export default function Profile() {
       return (
       <div style={{
         maxWidth: '1200px',
-        margin: '0 0',
-        padding: window.innerWidth <= 900 ? '0' : '0 1rem',
+        margin: '0 auto',
+        padding: '0',
         display: 'flex',
         flexDirection: 'column',
         gap: '0',
@@ -513,13 +513,13 @@ export default function Profile() {
         gridTemplateColumns: '400px minmax(0, 1fr)',
         gap: '2rem',
         alignItems: 'start',
-        margin: '0'
+        margin: '0 1rem'
       }}>
         
         {/* Mobile-specific spacer for card overlay */}
         <div className="mobile-card-spacer" style={{ 
-          height: '20px',
-          display: 'block',
+          height: '0px',
+          display: 'none',
           gridColumn: '1 / -1'
         }}></div>
         {/* Left Column - Profile Information */}
@@ -1131,6 +1131,11 @@ export default function Profile() {
                 @media (max-width: 900px) {
           body {
             background: ${darkerSecondaryColor} !important;
+          }
+          
+          .mobile-card-spacer {
+            height: 30px !important;
+            display: block !important;
           }
           
           .navbar-spacer {
