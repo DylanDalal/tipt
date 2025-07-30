@@ -1,5 +1,5 @@
 // src/Profile.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth } from './firebase';
@@ -56,54 +56,48 @@ const PAYMENT_METHODS = [
   {
     id: 'cashapp',
     name: 'Cash App',
-    icon: '$',
+    logo: '/profile_logos/cashapp.png',
     bgColor: '#00d632',
-    textColor: 'white',
     condition: (data, links) => links.cashAppLink || data.cashAppUrl,
     getUrl: (data, links) => links.cashAppLink || data.cashAppUrl
   },
   {
     id: 'paypal',
     name: 'PayPal',
-    icon: 'P',
+    logo: '/profile_logos/paypal.png',
     bgColor: '#ffc439',
-    textColor: '#003087',
     condition: (data, links) => links.payPalLink,
     getUrl: (data, links) => links.payPalLink
   },
   {
     id: 'venmo',
     name: 'Venmo',
-    icon: 'V',
+    logo: '/profile_logos/venmo.png',
     bgColor: '#008cff',
-    textColor: 'white',
     condition: (data, links) => links.venmoLink,
     getUrl: (data, links) => links.venmoLink
   },
   {
     id: 'applepay',
     name: 'Apple Pay',
-    icon: '🍎',
+    logo: '/profile_logos/apple_pay.png',
     bgColor: 'white',
-    textColor: 'black',
     condition: (data, links) => data.acceptsApplePay,
     getUrl: () => null // Apple Pay doesn't have a direct URL
   },
   {
     id: 'googlepay',
     name: 'Google Pay',
-    icon: 'G',
+    logo: '/profile_logos/google_pay.png',
     bgColor: '#000000',
-    textColor: 'white',
     condition: (data, links) => data.acceptsGooglePay,
     getUrl: () => null // Google Pay doesn't have a direct URL
   },
   {
     id: 'samsungpay',
     name: 'Samsung Pay',
-    icon: 'S',
-    bgColor: '#1428a0',
-    textColor: 'white',
+    logo: '/profile_logos/samsung_pay.png',
+    bgColor: '#1e4bc6',
     condition: (data, links) => data.acceptsSamsungPay,
     getUrl: () => null // Samsung Pay doesn't have a direct URL
   }
@@ -113,51 +107,61 @@ const PAYMENT_METHODS = [
 const SOCIAL_MEDIA_LINKS = [
   {
     id: 'spotify',
-    icon: '♪',
-    bgColor: '#1db954',
-    textColor: 'white',
+    logo: '/profile_logos/spotify.png',
     condition: (data) => data.spotifyUrl,
     getUrl: (data) => data.spotifyUrl
   },
   {
     id: 'youtube',
-    icon: '▶',
-    bgColor: '#ff0000',
-    textColor: 'white',
+    logo: '/profile_logos/youtube.png',
     condition: (data) => data.youTubeUrl,
     getUrl: (data) => data.youTubeUrl
   },
   {
     id: 'tiktok',
-    icon: '♪',
-    bgColor: '#000000',
-    textColor: 'white',
+    logo: '/profile_logos/tiktok.png',
     condition: (data) => data.tikTokUrl,
     getUrl: (data) => data.tikTokUrl
   },
   {
     id: 'instagram',
-    icon: '📷',
-    bgColor: '#e4405f',
-    textColor: 'white',
+    logo: '/profile_logos/instagram.png',
     condition: (data) => data.instagramUrl,
     getUrl: (data) => data.instagramUrl
   },
   {
     id: 'twitter',
-    icon: '🐦',
-    bgColor: '#1da1f2',
-    textColor: 'white',
+    logo: '/profile_logos/twitter.png',
     condition: (data) => data.twitterUrl,
     getUrl: (data) => data.twitterUrl
   },
   {
     id: 'facebook',
-    icon: 'f',
-    bgColor: '#1877f2',
-    textColor: 'white',
+    logo: '/profile_logos/facebook.png',
     condition: (data) => data.facebookUrl,
     getUrl: (data) => data.facebookUrl
+  }
+];
+
+// Action icons configuration
+const ACTION_ICONS = [
+  {
+    id: 'camera',
+    logo: '/profile_logos/camera.png',
+    condition: () => true, // Always show
+    getUrl: () => null
+  },
+  {
+    id: 'like',
+    logo: '/profile_logos/heart.png',
+    condition: () => true, // Always show
+    getUrl: () => null
+  },
+  {
+    id: 'share',
+    logo: '/profile_logos/share.png',
+    condition: () => true, // Always show
+    getUrl: () => null
   }
 ];
 
@@ -171,7 +175,12 @@ const getActiveSocialMediaLinks = (data) => {
   return SOCIAL_MEDIA_LINKS.filter(link => link.condition(data));
 };
 
-// Single reusable payment method component
+// Function to get active action icons
+const getActiveActionIcons = (data) => {
+  return ACTION_ICONS.filter(icon => icon.condition(data));
+};
+
+// Reusable payment method component
 const PaymentMethodItem = ({ method, data, links, onLinkClick, isLast }) => {
   const url = method.getUrl(data, links);
   
@@ -192,21 +201,24 @@ const PaymentMethodItem = ({ method, data, links, onLinkClick, isLast }) => {
       >
         <div style={{
           width: '60px',
-          height: '40px',
+          height: '30px',
           backgroundColor: method.bgColor,
           borderRadius: '8px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          flexShrink: 0
+          flexShrink: 0,
+          padding: '6px'
         }}>
-          <span style={{ 
-            color: method.textColor, 
-            fontSize: '20px', 
-            fontWeight: 'bold' 
-          }}>
-            {method.icon}
-          </span>
+          <img 
+            src={method.logo} 
+            alt={method.name}
+            style={{
+              width: '90%',
+              height: '90%',
+              objectFit: 'contain',
+            }}
+          />
         </div>
         <span style={{ 
           color: 'white', 
@@ -237,8 +249,6 @@ const SocialMediaLink = ({ link, data, onLinkClick }) => {
     <div style={{
       width: '32px',
       height: '32px',
-      backgroundColor: link.bgColor,
-      borderRadius: '8px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -250,9 +260,48 @@ const SocialMediaLink = ({ link, data, onLinkClick }) => {
     onMouseEnter={(e) => e.target.style.transform = 'scale(1.1)'}
     onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
     >
-      <span style={{ color: link.textColor, fontSize: '16px', fontWeight: 'bold' }}>
-        {link.icon}
-      </span>
+      <img 
+        src={link.logo} 
+        alt={link.id}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain'
+        }}
+      />
+    </div>
+  );
+};
+
+// Single reusable action icon component
+const ActionIcon = ({ icon, data, onLinkClick }) => {
+  const url = icon.getUrl(data);
+  
+  return (
+    <div style={{
+      width: '25px',
+      height: '25px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      cursor: 'pointer',
+      opacity: '0.55',
+      transition: 'opacity 0.3s ease',
+      flexShrink: 0
+    }} 
+    onClick={() => onLinkClick(icon.id, url)}
+          onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+      onMouseLeave={(e) => e.target.style.opacity = '0.55'}
+    >
+      <img 
+        src={icon.logo} 
+        alt={icon.id}
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'contain'
+        }}
+      />
     </div>
   );
 };
@@ -264,12 +313,34 @@ export default function Profile() {
   const [currentUser, setCurrentUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [copiedColor, setCopiedColor] = useState(null);
+  const [scrollY, setScrollY] = useState(0);
+  const bannerRef = useRef(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
     });
     return () => unsubscribe();
+  }, []);
+
+  // Parallax effect for banner background
+  useEffect(() => {
+    const handleScroll = () => {
+      // Responsive parallax - more pronounced on mobile
+      const isMobile = window.innerWidth <= 900;
+      const parallaxMultiplier = isMobile ? 0.2 : 0.1; // Double the effect on mobile
+      const parallaxOffset = window.scrollY * parallaxMultiplier;
+      setScrollY(parallaxOffset);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true }); // Recalculate on resize
+    handleScroll(); // Initial call
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
   }, []);
 
   // Test color darkening on component mount
@@ -392,15 +463,11 @@ export default function Profile() {
 
   const canEdit = currentUser && currentUser.uid === uid;
 
-  const venmoLink = d.venmoUsername
-    ? `https://venmo.com/${d.venmoUsername.replace(/^@/, '')}`
-    : d.venmoUrl;
-  const cashAppLink = d.cashAppUsername
-    ? `https://cash.app/$${d.cashAppUsername.replace(/^\$+/, '')}`
+  const venmoLink = d.venmoUrl;
+  const cashAppLink = d.cashAppTag
+    ? `https://cash.app/$${d.cashAppTag.replace(/^\$+/, '')}`
     : d.cashAppUrl;
-  const payPalLink = d.payPalUsername
-    ? `https://paypal.me/${d.payPalUsername.replace(/^@/, '')}`
-    : d.payPalUrl;
+  const payPalLink = d.payPalUrl;
 
       // Get the primary color from banner colors or use a default
       const primaryColor = d.bannerColors && d.bannerColors.length > 0 ? d.bannerColors[0] : '#008080';
@@ -424,27 +491,35 @@ export default function Profile() {
 
       return (
       <div style={{
-        maxWidth: '1200px',
+        maxWidth: '1230px',
         margin: '0 auto',
-        padding: '1rem',
+        padding: window.innerWidth <= 900 ? '0' : '1rem 0',
         display: 'flex',
         flexDirection: 'column',
-        gap: '2rem',
+        gap: window.innerWidth <= 900 ? '0' : '2rem',
         width: '100%',
         boxSizing: 'border-box',
         backgroundColor: 'transparent',
         minHeight: '100vh'
       }}>
         {/* Spacer to account for sticky navbar */}
-        <div style={{ height: '30px' }}></div>
+        <div className="navbar-spacer" style={{ height: '30px' }}></div>
 
       {/* Main content - responsive layout */}
       <div className="profile-container" style={{
         display: 'grid',
-        gridTemplateColumns: '1fr 2fr',
+        gridTemplateColumns: '400px minmax(0, 1fr)',
         gap: '2rem',
-        alignItems: 'start'
+        alignItems: 'start',
+        margin: '0 1rem'
       }}>
+        
+        {/* Mobile-specific spacer for card overlay */}
+        <div className="mobile-card-spacer" style={{ 
+          height: window.innerWidth <= 900 ? '2rem' : '0',
+          display: window.innerWidth <= 900 ? 'block' : 'none',
+          gridColumn: '1 / -1'
+        }}></div>
         {/* Left Column - Profile Information */}
         <div style={{
           display: 'flex',
@@ -460,82 +535,126 @@ export default function Profile() {
           }}>
             Profile
           </h2>
-          {/* Introduction Section with Banner Background */}
-          <div style={{
+          {/* Introduction Section with Stacked Cards */}
+          <div id="profile-banner" ref={bannerRef} style={{
             position: 'relative',
-            borderRadius: '30px',
-            overflow: 'hidden',
             marginBottom: '1rem',
+            borderRadius: '30px',
             width: '100%',
-            maxWidth: '100%',
-            backgroundColor: secondaryColor,
-            border: `1px solid ${tertiaryColor}`
+            maxWidth: '100%'
           }}>
-            {/* Banner Background */}
-            {d.profileBannerUrl && (
+                          {/*Banner Background */}
+              {d.profileBannerUrl && (
+                <div className="banner-wrapper" style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  borderRadius: '30px',
+                  overflow: 'hidden',
+                  zIndex: 1
+                }}>
+                  <div style={{
+                    position: 'absolute',
+                    top: '-10vh',
+                    left: '-10%',
+                    right: '-10%',
+                    bottom: '20vh',
+                    backgroundImage: `url(${d.profileBannerUrl})`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    transform: `translateY(${scrollY}px)`,
+                    transition: 'transform 0.1s ease-out'
+                  }} />
+                </div>
+              )}
+              
+              {/* Gradient overlay that extends beyond card boundaries */}
               <div style={{
                 position: 'absolute',
                 top: 0,
                 left: 0,
                 right: 0,
-                bottom: '20vh',
-                backgroundImage: `url(${d.profileBannerUrl})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                filter: 'blur(6px)',
-                transform: 'scale(1.1)'
+                bottom: 0,
+                background: `linear-gradient(to bottom, 
+                  ${darkerSecondaryColor}00 0%,  
+                  ${darkerSecondaryColor} 70%,
+                  ${darkerSecondaryColor} 100%)`,
+                zIndex: 1
               }} />
-            )}
             
-            {/* Gradient overlay that transitions from banner to secondary color */}
-            <div style={{
-              position: 'absolute',
-              margin: '.2%',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: `linear-gradient(to bottom, 
-                ${darkerSecondaryColor}00 0%,  
-                ${darkerSecondaryColor} 70%,
-                ${darkerSecondaryColor} 100%)`
-            }} />
-            
-            {/* Content overlay */}
+            {/* Main Content */}
             <div style={{
               position: 'relative',
-              zIndex: 2,
-              padding: '5%',
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'flex-start',
-              gap: '1.3rem',
+              borderRadius: '30px',
+              overflow: 'hidden',
               width: '100%',
-              boxSizing: 'border-box'
+              maxWidth: '100%',
+              border: `1px solid ${tertiaryColor}`,
+              boxShadow: `0 0 20px ${tertiaryColor}20`,
+              zIndex: 2,
+              backdropFilter: 'blur(6px)'
             }}>
+
+              
+              {/* Content overlay */}
+              <div style={{
+                position: 'relative',
+                zIndex: 2,
+                padding: '5%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-start',
+                gap: '1.3rem',
+                width: '100%',
+                boxSizing: 'border-box'
+              }}>
               <div style={{
                 display: 'flex',
                 alignItems: 'flex-end',
                 gap: '1.5rem',
                 width: '100%'
               }}>
-                                  <img 
-                    src={d.profileImageUrl || '/default-avatar.jpg'} 
-                    alt="profile" 
-                    className="profile-image"
-                    style={{
-                      width: 'clamp(60px, 16vw, 130px)',
-                      height: 'clamp(70px, 18vw, 150px)',
-                      borderRadius: '20px',
-                      objectFit: 'cover',
-                      flexShrink: 0
-                    }}
-                  />
+                <img 
+                  src={d.profileImageUrl || '/default-avatar.jpg'} 
+                  alt="profile" 
+                  className="profile-image"
+                  style={{
+                    width: 'clamp(60px, 16vw, 130px)',
+                    height: 'clamp(70px, 18vw, 150px)',
+                    borderRadius: '20px',
+                    objectFit: 'cover',
+                    flexShrink: 0
+                  }}
+                />
                 <div style={{
                   flex: 1,
-                  minWidth: 0
+                  minWidth: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem'
                 }}>
+                  {/* Action Icons */}
+                  <div style={{
+                    display: 'flex',
+                    gap: '1.5rem',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    marginBottom: '0.5rem',
+                    opacity: '0.6'
+                  }}>
+                    {getActiveActionIcons(d).map((icon) => (
+                      <ActionIcon
+                        key={icon.id}
+                        icon={icon}
+                        data={d}
+                        onLinkClick={handleLinkClick}
+                      />
+                    ))}
+                  </div>
+                  
                   <h1 style={{
                     margin: '0 0 0 0',
                     color: 'white',
@@ -549,9 +668,11 @@ export default function Profile() {
                   {d.altName && (
                     <p style={{
                       margin: '0 0 0.25rem 0',
-                      color: '#949494',
+                      color: '#c2c2c2',
                       fontSize: 'clamp(1.5rem, 4vw, 2rem)',
-                      wordBreak: 'break-word'
+                      wordBreak: 'break-word',
+                      fontWeight: '500',
+                      lineHeight: '1'
                     }}>
                       {d.lastName}
                     </p>
@@ -579,7 +700,6 @@ export default function Profile() {
                 display: 'flex',
                 gap: '1rem',
                 alignItems: 'center',
-                marginTop: '0.5rem',
                 flexWrap: 'wrap'
               }}>
                 {getActiveSocialMediaLinks(d).map((link) => (
@@ -613,7 +733,7 @@ export default function Profile() {
                   fontSize: '18px',
                   fontWeight: '600',
                   textAlign: 'left',
-                  lineHeight: '.6'
+                  lineHeight: '.8'
                 }}>
                   Tip {d.firstName}
                 </h2>
@@ -690,6 +810,7 @@ export default function Profile() {
               </div>
             </div>
           </div>
+        </div>
 
           {/* Edit Profile Button */}
           {canEdit && (
@@ -734,7 +855,7 @@ export default function Profile() {
                 Gallery
               </h2>
               
-              <div style={{ width: '100%', overflow: 'hidden', maxWidth: '600px' }}>
+              <div style={{ width: '100%', overflow: 'scroll', maxWidth: '800px' }}>
                 <div 
                   className="gallery-scroll"
                   style={{
@@ -867,6 +988,8 @@ export default function Profile() {
           padding: 0;
           transition: background 0.3s ease;
           min-height: 100vh;
+          display: block !important;
+          place-items: unset !important;
         }
         
         /* Ensure smooth transitions when background color changes */
@@ -874,46 +997,90 @@ export default function Profile() {
           transition: background-color 0.3s ease;
         }
         
-        /* Gallery scrollbar styling */
+        /* Hide all scrollbars */
+        ::-webkit-scrollbar {
+          display: none;
+        }
+        
+        * {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        
+        /* Gallery scrollbar styling - hidden */
         .gallery-scroll::-webkit-scrollbar {
-          height: 6px;
+          display: none;
         }
         
-        .gallery-scroll::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 3px;
+        .gallery-scroll {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
         }
         
-        .gallery-scroll::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.3);
-          border-radius: 3px;
+        /* Desktop styles - disable banner overflow */
+        @media (min-width: 901px) {
+          .banner-wrapper {
+            overflow: hidden !important;
+          }
+          
+          /* Desktop gradient with rounded borders */
+          #profile-banner > div:nth-child(2) {
+            border-radius: 30px !important;
+          }
         }
         
-        .gallery-scroll::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.5);
-        }
-        
-        @media (max-width: 768px) {
+                @media (max-width: 900px) {
+          body {
+            background: ${darkerSecondaryColor} !important;
+          }
+          
+          .navbar-spacer {
+            height: 0px !important;
+          }
+          
           .profile-container {
             grid-template-columns: 1fr !important;
             gap: 1rem !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow-x: hidden !important;
+            max-width: 100vw !important;
           }
           
-          /* Ensure no horizontal scrolling on mobile */
-          body {
-            overflow-x: hidden;
+          /* Allow banner to overflow while keeping content constrained */
+          #profile-banner {
+            position: relative !important;
+            width: 100% !important;
+          }
+          
+          .banner-wrapper {
+            overflow: visible !important;
+            border-radius: 0 !important;
+            position: absolute !important;
+            left: -2vw !important;
+            right: -2vw !important;
+            width: calc(100% + 4vw) !important;
+          }
+          
+          /* Mobile gradient extension */
+          #profile-banner > div:nth-child(2) {
+            left: -5vw !important;
+            right: -5vw !important;
+            width: calc(100% + 10vw) !important;
+          }
+          
+          #profile-banner > div:first-child {
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
           }
           
           /* Make sure all content fits within viewport */
           .profile-container > div {
             width: 100% !important;
-            max-width: 100vw !important;
+            max-width: calc(100vw - 2rem) !important;
             box-sizing: border-box !important;
-          }
-          
-          /* Adjust padding for mobile */
-          .profile-container {
-            padding: 0 !important;
+            margin: 0 auto !important;
           }
           
           /* Profile image sizing for mobile */
@@ -923,6 +1090,18 @@ export default function Profile() {
             min-width: 60px !important;
             min-height: 70px !important;
           }
+        }
+        
+        /* Ensure no horizontal scrolling on mobile */
+        body {
+          overflow-x: hidden;
+          max-width: 100vw;
+          width: 100%;
+        }
+        
+        /* Ensure the main container doesn't overflow */
+        .profile-container {
+          max-width: 100vw;
         }
         
         @media (max-width: 480px) {
