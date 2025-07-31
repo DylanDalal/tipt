@@ -28,6 +28,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import debounce from 'lodash.debounce';
 import { extractDominantColors } from './colorExtractor';
+import { CalendarEditor } from './Calendar';
 
 // Function to extract YouTube video ID from various URL formats
 const extractYouTubeVideoId = (url) => {
@@ -64,7 +65,7 @@ const FRESH = {
   images: [],
   payPalUrl: '', venmoUrl: '', cashAppTag: '', spotifyUrl: '',
   youTubeUrl: '', tikTokUrl: '', twitterUrl: '', facebookUrl: '', instagramUrl: '',
-  videos: [],
+  videos: [], events: [],
 };
 
 const schema = yup.object({
@@ -764,6 +765,22 @@ export default function SignupWizard() {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Events Calendar */}
+          <div className="row">
+            <div style={{ width: '100%' }}>
+              <label style={{ display: 'block', marginBottom: '0.5rem', color: '#a8a8a5', fontSize: '14px' }}>
+                Events (Optional)
+              </label>
+              <p style={{ color: '#888', fontSize: '12px', marginBottom: '1rem' }}>
+                Add upcoming events to your profile. Click on any future date to add an event.
+              </p>
+              <CalendarEditor 
+                events={data.events}
+                onEventsChange={(events) => setData(p => ({ ...p, events }))}
+              />
             </div>
           </div>
 

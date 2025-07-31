@@ -6,6 +6,7 @@ import { auth } from './firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import { db } from './firebase';
 import { trackProfileView, trackLinkClick, getVisitorLocation } from './analytics';
+import { CalendarDisplay } from './Calendar';
 
 // Test function to verify color darkening works
 const testColorDarkening = () => {
@@ -318,7 +319,15 @@ export default function Profile() {
   const [scrollY, setScrollY] = useState(0);
   const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
   const bannerRef = useRef(null);
+
+  // Calendar navigation function
+  const navigateCalendarMonths = (direction) => {
+    const newMonth = new Date(calendarMonth);
+    newMonth.setMonth(newMonth.getMonth() + direction);
+    setCalendarMonth(newMonth);
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -351,6 +360,17 @@ export default function Profile() {
   useEffect(() => {
     testColorDarkening();
   }, []);
+
+  // Initialize calendar month when events are loaded
+  useEffect(() => {
+    if (d?.events && d.events.length > 0) {
+      // Find the first event date
+      const firstEventDate = new Date(Math.min(...d.events.map(e => new Date(e.startTime))));
+      const startMonth = new Date(firstEventDate.getFullYear(), firstEventDate.getMonth(), 1);
+      
+      setCalendarMonth(startMonth);
+    }
+  }, [d?.events]);
 
   // Handle gallery scroll to update current index
   const handleGalleryScroll = (e) => {
@@ -1033,9 +1053,9 @@ export default function Profile() {
                             key={index}
                             style={{
                               position: 'relative',
-                              width: 'calc(100% - 1rem)',
-                              minWidth: 'calc(100% - 1rem)',
-                              height: '200px',
+                              width: '100%',
+                              minWidth: '100%',
+                              aspectRatio: '16/9',
                               borderRadius: '12px',
                               overflow: 'hidden',
                               cursor: 'pointer',
@@ -1117,47 +1137,78 @@ export default function Profile() {
                 )}
 
                 {/* Mobile Calendar Section */}
-                <div style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  marginTop: '1.5rem'
-                }}>
-                  <h2 style={{
-                    margin: '0 0 1rem 0',
-                    color: '#a8a8a5',
-                    fontSize: '18px',
-                    fontWeight: '600'
-                  }}>
-                    Events
-                  </h2>
-                  
+                {d.events && d.events.length > 0 && (
                   <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: '1rem'
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    marginTop: '1.5rem'
                   }}>
                     <div style={{
-                      backgroundColor: 'rgba(64, 64, 64, 0.8)',
-                      borderRadius: '8px',
-                      padding: '1rem',
-                      textAlign: 'center',
-                      backdropFilter: 'blur(5px)'
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '1rem'
                     }}>
-                      <h4 style={{ margin: '0 0 0.5rem 0', color: 'white', fontSize: '14px' }}>April</h4>
-                      <div style={{ color: '#888', fontSize: '12px' }}>Calendar Placeholder</div>
+                      <h2 style={{
+                        margin: '0',
+                        color: '#a8a8a5',
+                        fontSize: '18px',
+                        fontWeight: '600'
+                      }}>
+                        Events
+                      </h2>
+                      <div style={{
+                        display: 'flex',
+                        gap: '0.5rem'
+                      }}>
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            navigateCalendarMonths(-1);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#a8a8a5',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            padding: '4px 8px'
+                          }}
+                        >
+                          ‹
+                        </button>
+                        <button 
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            navigateCalendarMonths(1);
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: '#a8a8a5',
+                            cursor: 'pointer',
+                            fontSize: '16px',
+                            padding: '4px 8px'
+                          }}
+                        >
+                          ›
+                        </button>
+                      </div>
                     </div>
-                    <div style={{
-                      backgroundColor: 'rgba(64, 64, 64, 0.8)',
-                      borderRadius: '8px',
-                      padding: '1rem',
-                      textAlign: 'center',
-                      backdropFilter: 'blur(5px)'
-                    }}>
-                      <h4 style={{ margin: '0 0 0.5rem 0', color: 'white', fontSize: '14px' }}>May</h4>
-                      <div style={{ color: '#888', fontSize: '12px' }}>Calendar Placeholder</div>
-                    </div>
+                    
+                    <CalendarDisplay 
+                      events={d.events}
+                      onMonthChange={setCalendarMonth}
+                      onNavigateMonths={navigateCalendarMonths}
+                      calendarMonth={calendarMonth}
+                      primaryColor={tertiaryColor}
+                      secondaryColor={tertiaryColor}
+                      tertiaryColor={tertiaryColor}
+                    />
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -1270,7 +1321,7 @@ export default function Profile() {
                       style={{
                         position: 'relative',
                         width: d.videos.length === 2 ? 'calc(50% - 0.5rem)' : '330px',
-                        height: d.videos.length === 2 ? 'calc((50% - 0.5rem) * 0.5625)' : '185px',
+                        aspectRatio: '16/9',
                         borderRadius: '12px',
                         overflow: 'hidden',
                         cursor: 'pointer',
@@ -1364,47 +1415,78 @@ export default function Profile() {
             </div>
           )}
 
-          {/* Calendar Section - Placeholder for future implementation */}
-          <div style={{
-            width: '100%',
-            boxSizing: 'border-box'
-          }}>
-            <h2 style={{
-              margin: '0 0 1rem 0',
-              color: '#a8a8a5',
-              fontSize: '18px',
-              fontWeight: '600'
-            }}>
-              Events
-            </h2>
-            
+          {/* Calendar Section */}
+          {d.events && d.events.length > 0 && (
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '1rem'
+              width: '100%',
+              boxSizing: 'border-box'
             }}>
               <div style={{
-                backgroundColor: 'rgba(64, 64, 64, 0.8)',
-                borderRadius: '8px',
-                padding: '1rem',
-                textAlign: 'center',
-                backdropFilter: 'blur(5px)'
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '1rem'
               }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', color: 'white', fontSize: '14px' }}>April</h4>
-                <div style={{ color: '#888', fontSize: '12px' }}>Calendar Placeholder</div>
+                <h2 style={{
+                  margin: '0',
+                  color: '#a8a8a5',
+                  fontSize: '18px',
+                  fontWeight: '600'
+                }}>
+                  Events
+                </h2>
+                <div style={{
+                  display: 'flex',
+                  gap: '0.5rem'
+                }}>
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigateCalendarMonths(-1);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#a8a8a5',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      padding: '4px 8px'
+                    }}
+                  >
+                    ‹
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      navigateCalendarMonths(1);
+                    }}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: '#a8a8a5',
+                      cursor: 'pointer',
+                      fontSize: '16px',
+                      padding: '4px 8px'
+                    }}
+                  >
+                    ›
+                  </button>
+                </div>
               </div>
-              <div style={{
-                backgroundColor: 'rgba(64, 64, 64, 0.8)',
-                borderRadius: '8px',
-                padding: '1rem',
-                textAlign: 'center',
-                backdropFilter: 'blur(5px)'
-              }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', color: 'white', fontSize: '14px' }}>May</h4>
-                <div style={{ color: '#888', fontSize: '12px' }}>Calendar Placeholder</div>
-              </div>
+              
+              <CalendarDisplay 
+                events={d.events}
+                onMonthChange={setCalendarMonth}
+                onNavigateMonths={navigateCalendarMonths}
+                calendarMonth={calendarMonth}
+                primaryColor={tertiaryColor}
+                secondaryColor={tertiaryColor}
+                tertiaryColor={tertiaryColor}
+              />
             </div>
-          </div>
+          )}
         </div>
       </div>
 
@@ -1475,6 +1557,23 @@ export default function Profile() {
           scrollbar-width: none;  /* Firefox */
         }
         
+        /* Calendar day styling */
+        .calendar-day {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 4px;
+          color: white;
+          font-size: 14px;
+          font-weight: 600;
+          min-height: 32px;
+          position: relative;
+        }
+        
+        .calendar-day.empty {
+          background: transparent;
+        }
+        
         /* Desktop styles - disable banner overflow */
         @media (min-width: 901px) {
           .banner-wrapper {
@@ -1523,6 +1622,13 @@ export default function Profile() {
             left: -2vw !important;
             right: -2vw !important;
             width: calc(100% + 4vw) !important;
+            height: 50% !important;
+          }
+          
+          /* Limit banner background image height on mobile */
+          .banner-wrapper > div {
+            bottom: 0 !important;
+            height: 100% !important;
           }
           
           /* Mobile gradient extension */
@@ -1573,6 +1679,29 @@ export default function Profile() {
           .profile-container > div:last-child {
             display: none !important;
           }
+          
+          /* Show only one month on mobile */
+          .calendar-month-right {
+            display: none !important;
+          }
+          
+          /* Adjust calendar grid to single column on mobile */
+          .calendar-display > div:first-child {
+            grid-template-columns: 1fr !important;
+            gap: 0 !important;
+          }
+          
+          /* Hide vertical divider on mobile since there's only one month */
+          .calendar-display > div:first-child > div[style*="position: absolute"][style*="left: 50%"] {
+            display: none !important;
+          }
+          
+          /* Center the calendar month on mobile with max width */
+          .calendar-month-left {
+            max-width: 550px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+          }
         }
         
         /* Hide mobile sections on desktop */
@@ -1580,6 +1709,13 @@ export default function Profile() {
           .mobile-gallery-section {
             display: none !important;
           }
+          
+          /* Hide calendar separation lines on desktop */
+          .calendar-separation-line {
+            display: none !important;
+          }
+          
+
         }
         
         /* Ensure no horizontal scrolling on mobile */
