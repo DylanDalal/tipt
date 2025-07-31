@@ -59,7 +59,7 @@ const FRESH = {
   acceptsApplePay: false, acceptsGooglePay: false, acceptsSamsungPay: false,
   taxID: '',
   profileImageUrl: '', profileBannerUrl: '', bannerColors: [],
-  description: '', notes: '',
+  description: '', notes: '', thought: '',
   tags: [], genres: [], themeColor: '#008080',
   images: [],
   payPalUrl: '', venmoUrl: '', cashAppTag: '', spotifyUrl: '',
@@ -540,6 +540,13 @@ export default function SignupWizard() {
             placeholder="Description"
             value={data.description}
             onChange={e => setData(p => ({ ...p, description: e.target.value }))}
+          />
+
+          <textarea
+            placeholder="Thought (optional) - A personal quote or reflection to share with visitors"
+            value={data.thought}
+            onChange={e => setData(p => ({ ...p, thought: e.target.value }))}
+            style={{ minHeight: '80px' }}
           />
 
           {/* Tags & Genres */}

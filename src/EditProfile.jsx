@@ -290,6 +290,13 @@ export default function EditProfile() {
         {/* DESCRIPTION */}
         <textarea placeholder="Description" {...register('description')} />
 
+        {/* THOUGHT */}
+        <textarea 
+          placeholder="Thought (optional) - A personal quote or reflection to share with visitors" 
+          {...register('thought')} 
+          style={{ minHeight: '80px' }}
+        />
+
         {/* TAGS & GENRES */}
         <div className="row cols-2">
           <div>

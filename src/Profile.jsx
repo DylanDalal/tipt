@@ -316,6 +316,8 @@ export default function Profile() {
   const [loading, setLoading] = useState(true);
   const [copiedColor, setCopiedColor] = useState(null);
   const [scrollY, setScrollY] = useState(0);
+  const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const bannerRef = useRef(null);
 
   useEffect(() => {
@@ -349,6 +351,38 @@ export default function Profile() {
   useEffect(() => {
     testColorDarkening();
   }, []);
+
+  // Handle gallery scroll to update current index
+  const handleGalleryScroll = (e) => {
+    const container = e.target;
+    const scrollLeft = container.scrollLeft;
+    const itemWidth = 200 + 16; // image width + gap
+    const maxScrollLeft = container.scrollWidth - container.clientWidth;
+    
+    // If scrolled to the very end, show the last item
+    if (scrollLeft >= maxScrollLeft - 1) {
+      setCurrentGalleryIndex((d?.images?.length || 0) - 1);
+    } else {
+      const currentIndex = Math.round(scrollLeft / itemWidth);
+      setCurrentGalleryIndex(Math.max(0, Math.min(currentIndex, (d?.images?.length || 0) - 1)));
+    }
+  };
+
+  // Handle video scroll to update current index
+  const handleVideoScroll = (e) => {
+    const container = e.target;
+    const scrollLeft = container.scrollLeft;
+    const itemWidth = container.offsetWidth - 16; // container width - gap
+    const maxScrollLeft = container.scrollWidth - container.clientWidth;
+    
+    // If scrolled to the very end, show the last item
+    if (scrollLeft >= maxScrollLeft - 1) {
+      setCurrentVideoIndex((d?.videos?.length || 0) - 1);
+    } else {
+      const currentIndex = Math.round(scrollLeft / itemWidth);
+      setCurrentVideoIndex(Math.max(0, Math.min(currentIndex, (d?.videos?.length || 0) - 1)));
+    }
+  };
 
   useEffect(() => {
     if (!uid) return;
@@ -761,63 +795,368 @@ export default function Profile() {
                 ))}
               </div>
 
-              {/* Divider Line */}
-              <div style={{
-                  width: '98%',
-                  height: '1.5px',
-                  margin: '0 2%',
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                }} />
-
-              {/* Thought Section */}
-              <div style={{
-
-                width: '100%'
-              }}>
-                <h2 style={{
-                  margin: '0 0 1rem 0',
-                  color: '#a8a8a5',
-                  fontSize: '18px',
-                  fontWeight: '600'
-                }}>
-                  Thought
-                </h2>
-                <div style={{
-                  backgroundColor: `${secondaryColor}`,
-                  borderRadius: '20px',
-                  padding: '1rem',
-                  position: 'relative',
-                  backdropFilter: 'blur(5px)'
-                }}>
+              {/* Thought Section - Only show if user has provided a thought */}
+              {d.thought && d.thought.trim() && (
+                <>
+                  {/* Divider Line */}
                   <div style={{
-                    position: 'absolute',
-                    top: '-8px',
-                    left: '1rem',
-                    fontSize: '20px',
-                    color: '#888'
+                      width: '98%',
+                      height: '1.5px',
+                      margin: '0 2%',
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                    }} />
+
+                  <div style={{
+                    width: '100%'
                   }}>
-                    "
+                    <h2 style={{
+                      margin: '0 0 1rem 0',
+                      color: '#a8a8a5',
+                      fontSize: '18px',
+                      fontWeight: '600'
+                    }}>
+                      Thought
+                    </h2>
+                    <div style={{
+                      backgroundColor: `${secondaryColor}`,
+                      borderRadius: '20px',
+                      padding: '.8rem 1rem',
+                      position: 'relative',
+                      backdropFilter: 'blur(5px)'
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        top: '-2px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        fontSize: '32px',
+                        color: '#8e8e8e',
+                        fontFamily: 'Arial',
+                        fontWeight: 'bold'
+                      }}>
+                        “
+                      </div>
+                      <p style={{
+                        margin: '1rem 0 0 0',
+                        color: '#c2bebd',
+                        fontSize: '14px',
+                        lineHeight: '1.5',
+                        fontWeight: '600',
+                        wordBreak: 'break-word'
+                      }}>
+                        {d.thought}
+                      </p>
+                      <p style={{
+                        margin: '1rem 0 0 0',
+                        color: '#8e8e8e',
+                        fontSize: '12px',
+                        fontWeight: '800',
+                        textAlign: 'center',
+                        wordBreak: 'break-word'
+                      }}>
+                        {d.firstName.toUpperCase()} {d.lastName.toUpperCase()}
+                      </p>
+                    </div>
                   </div>
-                  <p style={{
-                    margin: '0.5rem 0 0 0',
-                    color: '#d2cecc',
-                    fontSize: '14px',
-                    lineHeight: '1.5',
-                    fontStyle: 'italic',
-                    wordBreak: 'break-word'
+                </>
+              )}
+
+                              {/* Mobile Gallery Section */}
+                <div className="mobile-gallery-section" style={{
+                  width: '100%',
+                  display: 'none'
+                }}>
+                  {!!d.images?.length && (
+                    <div style={{
+                      width: '100%',
+                      boxSizing: 'border-box'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        marginBottom: '1rem'
+                      }}>
+                        <h2 style={{
+                          margin: '0',
+                          color: '#a8a8a5',
+                          fontSize: '18px',
+                          fontWeight: '600'
+                        }}>
+                          Gallery
+                        </h2>
+                        
+                        {/* Gallery Scroll Indicators */}
+                        {d.images.length > 1 && (
+                          <div style={{
+                            display: 'flex',
+                            gap: '0.5rem'
+                          }}>
+                            {d.images.map((_, index) => (
+                              <div
+                                key={index}
+                                className="gallery-indicator"
+                                style={{
+                                  width: '8px',
+                                  height: '8px',
+                                  borderRadius: '50%',
+                                  backgroundColor: index === currentGalleryIndex ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)',
+                                  transition: 'background-color 0.3s ease',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => {
+                                  const container = document.querySelector('.mobile-gallery-scroll');
+                                  if (container) {
+                                    container.scrollTo({
+                                      left: index * (200 + 16), // 200px image width + 16px gap
+                                      behavior: 'smooth'
+                                    });
+                                  }
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    
+                    <div style={{ width: '100%', overflow: 'hidden', maxWidth: '100%' }}>
+                      <div 
+                        className="mobile-gallery-scroll"
+                        style={{
+                          display: 'flex',
+                          overflowX: 'auto',
+                          gap: '1rem',
+                          paddingBottom: '0.5rem',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          scrollSnapType: 'x mandatory',
+                          scrollBehavior: 'smooth'
+                        }}
+                        onScroll={handleGalleryScroll}
+                      >
+                        {d.images.map((url, i) => (
+                          <img 
+                            key={i} 
+                            src={url} 
+                            alt=""
+                            style={{
+                              width: '200px',
+                              height: '225px',
+                              borderRadius: '20px',
+                              objectFit: 'cover',
+                              flexShrink: 0
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mobile Videos Section */}
+                {d.videos && d.videos.length > 0 && (
+                  <div style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    marginTop: '1.5rem'
                   }}>
-                    Nothing soothes the chaos in my head like screaming into a mic - thanks for listening, even when it gets loud.
-                  </p>
-                  <p style={{
-                    margin: '1rem 0 0 0',
-                    color: '#888',
-                    fontSize: '12px',
-                    fontWeight: '600',
-                    textAlign: 'right',
-                    wordBreak: 'break-word'
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: '1rem'
+                    }}>
+                      <h2 style={{
+                        margin: '0',
+                        color: '#a8a8a5',
+                        fontSize: '18px',
+                        fontWeight: '600'
+                      }}>
+                        Videos
+                      </h2>
+                      
+                                              {/* Scroll Indicators */}
+                        {d.videos.length > 1 && (
+                          <div style={{
+                            display: 'flex',
+                            gap: '0.5rem'
+                          }}>
+                            {d.videos.map((_, index) => (
+                              <div
+                                key={index}
+                                className="video-indicator"
+                                style={{
+                                  width: '8px',
+                                  height: '8px',
+                                  borderRadius: '50%',
+                                  backgroundColor: index === currentVideoIndex ? 'rgba(255, 255, 255, 0.8)' : 'rgba(255, 255, 255, 0.3)',
+                                  transition: 'background-color 0.3s ease',
+                                  cursor: 'pointer'
+                                }}
+                                onClick={() => {
+                                  const container = document.querySelector('.mobile-video-scroll');
+                                  if (container) {
+                                    container.scrollTo({
+                                      left: index * container.offsetWidth,
+                                      behavior: 'smooth'
+                                    });
+                                  }
+                                }}
+                              />
+                            ))}
+                          </div>
+                        )}
+                    </div>
+                    
+                    <div style={{ 
+                      width: '100%', 
+                      overflow: 'hidden', 
+                      maxWidth: '100%',
+                      position: 'relative'
+                    }}>
+                      <div 
+                        className="mobile-video-scroll"
+                        style={{
+                          display: 'flex',
+                          overflowX: 'auto',
+                          gap: '1rem',
+                          paddingBottom: '0.5rem',
+                          width: '100%',
+                          boxSizing: 'border-box',
+                          scrollSnapType: 'x mandatory',
+                          scrollBehavior: 'smooth'
+                        }}
+                        onScroll={handleVideoScroll}
+                      >
+                        {d.videos.map((video, index) => (
+                          <div
+                            key={index}
+                            style={{
+                              position: 'relative',
+                              width: 'calc(100% - 1rem)',
+                              minWidth: 'calc(100% - 1rem)',
+                              height: '200px',
+                              borderRadius: '12px',
+                              overflow: 'hidden',
+                              cursor: 'pointer',
+                              transition: 'transform 0.2s ease',
+                              backgroundColor: 'rgba(64, 64, 64, 0.8)',
+                              backdropFilter: 'blur(5px)',
+                              flexShrink: 0,
+                              scrollSnapAlign: 'start'
+                            }}
+                            onClick={() => {
+                              // Open video in new tab
+                              window.open(video.url, '_blank', 'noopener,noreferrer');
+                              
+                              // Track analytics if not the profile owner
+                              if (!currentUser || currentUser.uid !== uid) {
+                                (async () => {
+                                  let visitorLocation = { location: 'Unknown' };
+                                  try {
+                                    visitorLocation = await getVisitorLocation();
+                                  } catch (error) {
+                                    console.error('Error getting visitor location:', error);
+                                  }
+                                  try {
+                                    await trackLinkClick(uid, 'youtube_video', video.url, visitorLocation);
+                                  } catch (error) {
+                                    console.error('Error tracking video click:', error);
+                                  }
+                                })();
+                              }
+                            }}
+                          >
+                            {/* Video Thumbnail */}
+                            <img
+                              src={`https://img.youtube.com/vi/${video.id}/maxresdefault.jpg`}
+                              alt="Video thumbnail"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                borderRadius: '12px'
+                              }}
+                              onError={(e) => {
+                                // Fallback to medium quality thumbnail if maxresdefault fails
+                                e.target.src = `https://img.youtube.com/vi/${video.id}/hqdefault.jpg`;
+                              }}
+                            />
+                            
+                            {/* Play Button Overlay */}
+                            <div style={{
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              width: '60px',
+                              height: '60px',
+                              backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                              borderRadius: '50%',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              pointerEvents: 'none'
+                            }}>
+                              <div style={{
+                                width: 0,
+                                height: 0,
+                                borderLeft: '20px solid white',
+                                borderTop: '12px solid transparent',
+                                borderBottom: '12px solid transparent',
+                                marginLeft: '4px'
+                              }} />
+                            </div>
+                            
+
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Mobile Calendar Section */}
+                <div style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  marginTop: '1.5rem'
+                }}>
+                  <h2 style={{
+                    margin: '0 0 1rem 0',
+                    color: '#a8a8a5',
+                    fontSize: '18px',
+                    fontWeight: '600'
                   }}>
-                    {d.firstName.toUpperCase()} {d.lastName.toUpperCase()}
-                  </p>
+                    Events
+                  </h2>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1fr',
+                    gap: '1rem'
+                  }}>
+                    <div style={{
+                      backgroundColor: 'rgba(64, 64, 64, 0.8)',
+                      borderRadius: '8px',
+                      padding: '1rem',
+                      textAlign: 'center',
+                      backdropFilter: 'blur(5px)'
+                    }}>
+                      <h4 style={{ margin: '0 0 0.5rem 0', color: 'white', fontSize: '14px' }}>April</h4>
+                      <div style={{ color: '#888', fontSize: '12px' }}>Calendar Placeholder</div>
+                    </div>
+                    <div style={{
+                      backgroundColor: 'rgba(64, 64, 64, 0.8)',
+                      borderRadius: '8px',
+                      padding: '1rem',
+                      textAlign: 'center',
+                      backdropFilter: 'blur(5px)'
+                    }}>
+                      <h4 style={{ margin: '0 0 0.5rem 0', color: 'white', fontSize: '14px' }}>May</h4>
+                      <div style={{ color: '#888', fontSize: '12px' }}>Calendar Placeholder</div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1116,6 +1455,26 @@ export default function Profile() {
           scrollbar-width: none;  /* Firefox */
         }
         
+        /* Mobile video scrollbar styling - hidden */
+        .mobile-video-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        
+        .mobile-video-scroll {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        
+        /* Mobile gallery scrollbar styling - hidden */
+        .mobile-gallery-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        
+        .mobile-gallery-scroll {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        
         /* Desktop styles - disable banner overflow */
         @media (min-width: 901px) {
           .banner-wrapper {
@@ -1203,6 +1562,23 @@ export default function Profile() {
           
           .profile-lastname {
             font-size: clamp(1.8rem, 10vw, 2.8rem) !important;
+          }
+          
+          /* Show mobile sections and hide desktop sections */
+          .mobile-gallery-section {
+            display: block !important;
+          }
+          
+          /* Hide desktop gallery/videos/calendar sections on mobile */
+          .profile-container > div:last-child {
+            display: none !important;
+          }
+        }
+        
+        /* Hide mobile sections on desktop */
+        @media (min-width: 901px) {
+          .mobile-gallery-section {
+            display: none !important;
           }
         }
         
