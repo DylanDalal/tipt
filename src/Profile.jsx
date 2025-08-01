@@ -321,6 +321,7 @@ export default function Profile() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const bannerRef = useRef(null);
+  const scrollContainerRef = useRef(null);
 
   // Calendar navigation function
   const navigateCalendarMonths = (direction) => {
@@ -339,20 +340,43 @@ export default function Profile() {
   // Parallax effect for banner background
   useEffect(() => {
     const handleScroll = () => {
-      // Responsive parallax - more pronounced on mobile
       const isMobile = window.innerWidth <= 900;
-      const parallaxMultiplier = isMobile ? 0.2 : 0.1; // Double the effect on mobile
-      const parallaxOffset = window.scrollY * parallaxMultiplier;
+      const parallaxMultiplier = isMobile ? 0.2 : 0.1;
+      
+      let parallaxOffset;
+      
+      if (isMobile) {
+        // On mobile, use window scroll
+        parallaxOffset = window.scrollY * parallaxMultiplier;
+      } else {
+        // On desktop, use profile-content-scroll container scroll
+        if (scrollContainerRef.current) {
+          parallaxOffset = scrollContainerRef.current.scrollTop * parallaxMultiplier;
+        } else {
+          parallaxOffset = 0;
+        }
+      }
+      
       setScrollY(parallaxOffset);
     };
 
+    // Listen to window scroll for mobile
     window.addEventListener('scroll', handleScroll, { passive: true });
-    window.addEventListener('resize', handleScroll, { passive: true }); // Recalculate on resize
+    window.addEventListener('resize', handleScroll, { passive: true });
+    
+    // Listen to profile-content-scroll for desktop
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.addEventListener('scroll', handleScroll, { passive: true });
+    }
+    
     handleScroll(); // Initial call
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.removeEventListener('scroll', handleScroll);
+      }
     };
   }, []);
 
@@ -559,7 +583,7 @@ export default function Profile() {
         minHeight: '100vh'
       }}>
         {/* Spacer to account for sticky navbar */}
-        <div className="navbar-spacer" style={{ height: '80px' }}></div>
+        <div className="navbar-spacer" style={{ height: '0px', }}></div>
 
       {/* Main content - responsive layout */}
       <div className="profile-container" style={{
@@ -567,7 +591,7 @@ export default function Profile() {
         gridTemplateColumns: '400px minmax(0, 1fr)',
         gap: '2rem',
         alignItems: 'start',
-        margin: '0 1rem'
+        margin: '0'
       }}>
         
         {/* Mobile-specific spacer for card overlay */}
@@ -577,22 +601,40 @@ export default function Profile() {
           gridColumn: '1 / -1'
         }}></div>
         {/* Left Column - Profile Information */}
-        <div style={{
+        <div className="profile-left-column" style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem',
-          width: '100%'
+          width: '100%',
+          position: 'sticky',
+          top: '0px',
+          height: 'fit-content',
+          overflow: 'visible',
         }}>
-          <h2 style={{
-            margin: '0',
-            color: '#a8a8a5',
-            fontSize: '18px',
-            fontWeight: '600'
+          <div ref={scrollContainerRef} className="profile-content-scroll" style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100vh',
+            width: '100%',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            gap: '1rem',
+            padding: '0 4px'
           }}>
-            Profile
-          </h2>
-          {/* Introduction Section with Stacked Cards */}
-          <div id="profile-banner" ref={bannerRef} style={{
+
+            <div className="profile-header" style={{
+              margin: '80px 0 0 0'
+            }}>
+              <h2 style={{
+                margin: '0',
+                color: '#a8a8a5',
+                fontSize: '18px',
+                fontWeight: '600'
+              }}>
+                Profile
+              </h2>
+            </div>
+            {/* Introduction Section with Stacked Cards */}
+            <div id="profile-banner" ref={bannerRef} style={{
             position: 'relative',
             marginBottom: '1rem',
             borderRadius: '30px',
@@ -637,7 +679,7 @@ export default function Profile() {
                   ${darkerSecondaryColor}00 0%,  
                   ${darkerSecondaryColor} 70%,
                   ${darkerSecondaryColor} 100%)`,
-                zIndex: 1
+                zIndex: 2
               }} />
             
             {/* Main Content */}
@@ -1224,6 +1266,7 @@ export default function Profile() {
                 border: 'none',
                 padding: '0.75rem 1.5rem',
                 borderRadius: '25px',
+                margin: '0 0 2rem 0 ',
                 cursor: 'pointer',
                 fontWeight: '600',
                 fontSize: '14px',
@@ -1233,6 +1276,7 @@ export default function Profile() {
               Edit Profile
             </button>
           )}
+          </div>
         </div>
 
         {/* Right Column - Gallery */}
@@ -1242,6 +1286,7 @@ export default function Profile() {
           gap: '1.5rem',
           width: '100%'
         }}>
+          <div style={{ height: '56px' }}></div>
           {/* Gallery Section */}
           {!!d.images?.length && (
             <div style={{
@@ -1584,6 +1629,14 @@ export default function Profile() {
           #profile-banner > div:nth-child(2) {
             border-radius: 30px !important;
           }
+          
+          /* Sticky profile card on desktop */
+                      .profile-left-column {
+              position: sticky !important;
+              max-height: calc(100vh) !important;
+              overflow-y: visible;
+              align-self: flex-start !important;
+            }
         }
         
                 @media (max-width: 900px) {
@@ -1594,6 +1647,32 @@ export default function Profile() {
           .mobile-card-spacer {
             height: 30px !important;
             display: block !important;
+          }
+          
+          /* Disable sticky positioning on mobile */
+          .profile-left-column {
+            position: static !important;
+            top: auto !important;
+          }
+          
+          /* Disable scrollable container on mobile */
+          .profile-content-scroll {
+            height: auto !important;
+            max-height: none !important;
+            overflow-y: visible !important;
+            overflow-x: visible !important;
+            padding: 0 !important;
+            gap: 0 !important;
+          }
+          
+          /* Reset edit button margin on mobile */
+          .profile-left-column button {
+            margin: 0 !important;
+          }
+          
+          /* Reset profile header margin on mobile */
+          .profile-header {
+            margin: 0 !important;
           }
           
           .navbar-spacer {
