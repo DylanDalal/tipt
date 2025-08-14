@@ -321,6 +321,7 @@ export default function Profile() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const bannerRef = useRef(null);
+  const profileCardRef = useRef(null);
 
   // Calendar navigation function
   const navigateCalendarMonths = (direction) => {
@@ -508,6 +509,8 @@ export default function Profile() {
     }
   };
 
+
+
   if (loading) return <p>Loading…</p>;
   if (!d) return <p>Profile not found</p>;
 
@@ -577,11 +580,15 @@ export default function Profile() {
           gridColumn: '1 / -1'
         }}></div>
         {/* Left Column - Profile Information */}
-        <div style={{
+        <div ref={profileCardRef} style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '1rem',
-          width: '100%'
+          width: '100%',
+          position: 'sticky',
+          top: '0px',
+          height: 'fit-content',
+          zIndex: 10
         }}>
           <h2 style={{
             margin: '0',
@@ -597,13 +604,16 @@ export default function Profile() {
             marginBottom: '1rem',
             borderRadius: '30px',
             width: '100%',
-            maxWidth: '100%'
+            maxWidth: '100%',
+            /* Extend into safe area on mobile */
+            marginTop: 'calc(-1 * env(safe-area-inset-top))',
+            paddingTop: 'env(safe-area-inset-top)'
           }}>
                           {/*Banner Background */}
               {d.profileBannerUrl && (
                 <div className="banner-wrapper" style={{
                   position: 'absolute',
-                  top: 0,
+                  top: 'calc(-1 * env(safe-area-inset-top))',
                   left: 0,
                   right: 0,
                   bottom: 0,
@@ -629,7 +639,7 @@ export default function Profile() {
               {/* Gradient overlay that extends beyond card boundaries */}
               <div style={{
                 position: 'absolute',
-                top: 0,
+                top: 'calc(-1 * env(safe-area-inset-top))',
                 left: 0,
                 right: 0,
                 bottom: 0,
@@ -1584,6 +1594,32 @@ export default function Profile() {
           #profile-banner > div:nth-child(2) {
             border-radius: 30px !important;
           }
+          
+          /* Sticky profile card styles */
+          .profile-container {
+            align-items: flex-start !important;
+          }
+          
+          /* Profile card sticky positioning */
+          .profile-container > div:first-child {
+            position: sticky !important;
+            top: 20px !important;
+            height: fit-content !important;
+            max-height: calc(100vh - 40px) !important;
+            overflow-y: auto !important;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+            z-index: 10 !important;
+          }
+          
+          .profile-container > div:first-child::-webkit-scrollbar {
+            display: none !important;
+          }
+          
+          /* Ensure right column content flows properly */
+          .profile-container > div:last-child {
+            min-height: 100vh;
+          }
         }
         
                 @media (max-width: 900px) {
@@ -1607,6 +1643,15 @@ export default function Profile() {
             margin: 0 !important;
             overflow-x: hidden !important;
             max-width: 100vw !important;
+          }
+          
+          /* Disable sticky positioning on mobile */
+          .profile-container > div:first-child {
+            position: relative !important;
+            top: auto !important;
+            max-height: none !important;
+            overflow-y: visible !important;
+            z-index: auto !important;
           }
           
           /* Allow banner to overflow while keeping content constrained */
