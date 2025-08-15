@@ -559,7 +559,10 @@ export default function Profile() {
         width: '100%',
         boxSizing: 'border-box',
         backgroundColor: 'transparent',
-        minHeight: '100vh'
+        minHeight: '100vh',
+        /* Extend into safe area on mobile */
+        marginTop: 'calc(-1 * env(safe-area-inset-top))',
+        paddingTop: 'env(safe-area-inset-top)'
       }}>
         {/* Spacer to account for sticky navbar */}
         <div className="navbar-spacer" style={{ height: '80px' }}></div>
@@ -607,15 +610,16 @@ export default function Profile() {
             maxWidth: '100%',
             /* Extend into safe area on mobile */
             marginTop: 'calc(-1 * env(safe-area-inset-top))',
-            paddingTop: 'env(safe-area-inset-top)'
+            paddingTop: 'env(safe-area-inset-top)',
+            overflow: 'visible'
           }}>
                           {/*Banner Background */}
               {d.profileBannerUrl && (
                 <div className="banner-wrapper" style={{
                   position: 'absolute',
-                  top: 'calc(-1 * env(safe-area-inset-top))',
-                  left: 0,
-                  right: 0,
+                  top: 'calc(-2 * env(safe-area-inset-top))',
+                  left: 'calc(-1 * env(safe-area-inset-left))',
+                  right: 'calc(-1 * env(safe-area-inset-right))',
                   bottom: 0,
                   borderRadius: '30px',
                   overflow: 'hidden',
@@ -639,9 +643,9 @@ export default function Profile() {
               {/* Gradient overlay that extends beyond card boundaries */}
               <div style={{
                 position: 'absolute',
-                top: 'calc(-1 * env(safe-area-inset-top))',
-                left: 0,
-                right: 0,
+                top: 'calc(-2 * env(safe-area-inset-top))',
+                left: 'calc(-1 * env(safe-area-inset-left))',
+                right: 'calc(-1 * env(safe-area-inset-right))',
                 bottom: 0,
                 background: `linear-gradient(to bottom, 
                   ${darkerSecondaryColor}00 0%,  
