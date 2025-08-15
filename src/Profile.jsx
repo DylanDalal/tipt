@@ -320,8 +320,51 @@ export default function Profile() {
   const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [stickyTopOffset, setStickyTopOffset] = useState(-110); // Default fallback
   const bannerRef = useRef(null);
   const profileCardRef = useRef(null);
+
+  // Function to calculate dynamic sticky position
+  const calculateStickyPosition = () => {
+    if (!profileCardRef.current) return -110; // Default fallback
+    
+    const cardElement = profileCardRef.current;
+    const cardHeight = cardElement.offsetHeight;
+    const viewportHeight = window.innerHeight;
+    
+    // Calculate how much the card exceeds 100vh
+    const heightExcess = Math.max(0, cardHeight - viewportHeight);
+    
+    // The sticky position should be negative of the excess height
+    // This ensures the card sticks to the top when it would otherwise overflow
+    const calculatedOffset = -heightExcess;
+    
+    // Add a small buffer (10px) to ensure smooth sticking
+    return calculatedOffset - 10;
+  };
+
+  // Update sticky position when profile data changes or on resize
+  useEffect(() => {
+    const updateStickyPosition = () => {
+      const newOffset = calculateStickyPosition();
+      setStickyTopOffset(newOffset);
+    };
+
+    // Initial calculation with a small delay to ensure DOM is ready
+    const timer = setTimeout(updateStickyPosition, 100);
+
+    // Recalculate on window resize
+    const handleResize = () => {
+      updateStickyPosition();
+    };
+
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, [d]); // Recalculate when profile data changes
 
   // Calendar navigation function
   const navigateCalendarMonths = (direction) => {
@@ -580,7 +623,7 @@ export default function Profile() {
         <div className="mobile-card-spacer" style={{ 
           height: '0px',
           display: 'none',
-          gridColumn: '1 / -1'
+          gridColumn: '1 / -1',
         }}></div>
         {/* Left Column - Profile Information */}
         <div ref={profileCardRef} style={{
@@ -589,9 +632,9 @@ export default function Profile() {
           gap: '1rem',
           width: '100%',
           position: 'sticky',
-          top: '0px',
+          top: `${stickyTopOffset}px`,
           height: 'fit-content',
-          zIndex: 10
+          zIndex: 10,
         }}>
           <h2 style={{
             margin: '0',
